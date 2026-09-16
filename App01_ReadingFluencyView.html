@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- codex-elegant: design details refined -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Fluência de Leitura — NeuroEdu</title>
+  
+  <?!= include('SharedTokens'); ?>
+  <?!= include('ApiClient'); ?>
+  
+  <style>
+:focus-visible {
+  outline: 3px solid var(--accent, #8ab4f8);
+  outline-offset: 2px;
+}
+    .app-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .app-header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border, #dadce0);
+    }
+    
+    .app-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 1.8rem;
+      color: var(--text, #202124);
+    }
+    
+    .subtitle {
+      margin: 0;
+      font-size: 0.95rem;
+      color: var(--muted, #5f6368);
+    }
+    
+    .section {
+      background: var(--surface, #ffffff);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted, #5f6368);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+    
+    .metric-card {
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(26, 115, 232, 0.02));
+      border: 1px solid rgba(26, 115, 232, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--muted, #5f6368);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary, #1a73e8);
+      margin-bottom: 4px;
+    }
+    
+    .metric-detail {
+      font-size: 0.8rem;
+      color: var(--muted, #5f6368);
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--primary, #1a73e8);
+      color: #ffffff;
+    }
+    
+    .btn-primary:hover {
+      background: #1557b0;
+    }
+    
+    .btn-secondary {
+      background: var(--surface, #f1f3f4);
+      color: var(--text, #202124);
+    }
+    
+    .btn-secondary:hover {
+      background: #e8eaed;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted, #5f6368);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted, #5f6368);
+    }
+    
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    
+    .ai-results {
+      background: linear-gradient(135deg, rgba(138, 180, 248, 0.08), rgba(138, 180, 248, 0.02));
+      border-left: 4px solid var(--primary, #1a73e8);
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    
+    .ai-results h3 {
+      margin: 0 0 12px 0;
+      font-size: 1.1rem;
+      color: var(--text, #202124);
+    }
+    
+    .ai-results p {
+      margin: 0;
+      line-height: 1.6;
+      color: var(--text, #202124);
+    }
+    
+    .trend-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .trend-excelente {
+      background: rgba(52, 168, 83, 0.15);
+      color: #34a853;
+    }
+    
+    .trend-normal {
+      background: rgba(26, 115, 232, 0.15);
+      color: #1a73e8;
+    }
+    
+    .trend-dificuldade {
+      background: rgba(234, 67, 53, 0.15);
+      color: #ea4335;
+    }
+    
+    .trend-insuficiente {
+      background: rgba(95, 99, 104, 0.15);
+      color: #5f6368;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style id="cdx-mi-style">.cdx-mi{font-size:1.1em;line-height:1;vertical-align:-0.15em}</style>
+  <style id="cdx-border-to-color">
+/* Padronização de borders → cores complementares (FROTA-20) */
+input:not([type="hidden"]),
+textarea,
+select,
+[class*="input"],
+[class*="field"],
+[class*="form"],
+.card,
+.panel,
+.box,
+.container,
+.modal,
+[class*="modal"],
+[class*="dialog"],
+dialog {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+input:not([type="hidden"]),
+textarea,
+select {
+  background-color: #20242b !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 2px #e9ecf1 !important;
+}
+  </style>
+
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+    <main>
+
+  <div class="app-container">
+    <header class="app-header">
+      <h1><i class="material-icons cdx-mi" aria-hidden="true">menu_book</i> Fluência de Leitura</h1>
+      <p class="subtitle">Observação de estado momentâneo via eye-tracking (POG) e eletroencefalografia (EEG)</p>
+    </header>
+
+    <!-- Seletor de Sessão -->
+    <section class="section">
+      <div class="section-title">Sessão de Leitura</div>
+      <select id="session-select" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border, #dadce0);">
+        <option value="">Carregando...</option>
+      </select>
+      <label for="subject-select" class="section-title" style="display:block;margin-top:16px">Participante para análise com IA</label>
+      <select id="subject-select" style="width: 100%; padding: 10px; border-radius: 6px">
+        <option value="">Selecione uma sessão primeiro</option>
+      </select>
+      <p class="subtitle" style="margin-top:8px">A análise individual só é executada quando há consentimento para a finalidade generativa.</p>
+    </section>
+
+    <!-- Métricas em Tempo Real -->
+    <section class="section">
+      <div class="section-title">Métricas Oculares — POG</div>
+      <div id="metrics-content">
+        <div class="loading">Carregando métricas...</div>
+      </div>
+      
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="App.refresh()"><i class="material-icons cdx-mi" aria-hidden="true">sync</i> Atualizar Métricas</button>
+        <button class="btn btn-primary" onclick="App.analyzePattern()"><i class="material-icons cdx-mi" aria-hidden="true">smart_toy</i> Análise de Padrão (IA)</button>
+      </div>
+    </section>
+
+    <!-- Resultados da Análise IA -->
+    <div id="ai-results-container" style="display:none">
+      <section class="section ai-results">
+        <h3><i class="material-icons cdx-mi" aria-hidden="true">lightbulb</i> Análise de Padrão de Leitura</h3>
+        <div id="ai-results-content"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * App de Fluência de Leitura — Cliente
+     * Comunica-se com App01_ReadingFluencyServer via AppServerRegistry
+     */
+    var App = (function() {
+      'use strict';
+      
+      const SERVER_ID = 'reading-fluency'; // ID do server no AppServerRegistry
+      const TOKEN = typeof NeuroEdu !== 'undefined' ? NeuroEdu.token : null;
+      let metricsRequestVersion = 0;
+
+      function init() {
+        if (!TOKEN) {
+          showError('Token de sessão não encontrado. Faça login novamente.');
+          return;
+        }
+        loadSessions();
+      }
+
+      function loadSessions() {
+        return ApiClient.call('SessionController', 'list', {
+          token: TOKEN,
+          status: 'ativa'
+        }).then(function(sessions) {
+          renderSessionSelect(sessions || []);
+          if (sessions && sessions.length > 0) {
+            refresh();
+          } else {
+            showEmptyState('Nenhuma sessão ativa. Inicie uma sessão no Gerenciador de Sessões.', {
+              label: 'Abrir Gerenciador de Sessões',
+              action: function() { NeuroEdu.navigate('sessions'); }
+            });
+          }
+        }).catch(function(err) {
+          showError('Erro ao carregar sessões: ' + err.message);
+        });
+      }
+
+      function refresh() {
+        const requestVersion = ++metricsRequestVersion;
+        const sessionId = getSelectedSessionId();
+        if (!sessionId) {
+          showEmptyState('Selecione uma sessão ativa.');
+          return;
+        }
+        
+        clearAiResults();
+        showLoading('Carregando métricas oculares...');
+
+        // O navegador recebe somente indicadores agregados e pseudônimos.
+        return Promise.all([
+          ApiClient.call(SERVER_ID, 'getIndicators', { token: TOKEN, sessionId: sessionId }),
+          ApiClient.call(SERVER_ID, 'getSubjects', { token: TOKEN, sessionId: sessionId })
+        ]).then(function(results) {
+          if (requestVersion !== metricsRequestVersion || getSelectedSessionId() !== sessionId) return;
+          const indicators = results[0] || {};
+          const subjects = results[1] || [];
+          renderSubjectSelect(subjects);
+          if (!indicators.totalRecords) {
+            showEmptyState('Nenhum dado POG registrado nesta sessão.');
+            return;
+          }
+          renderIndicators(indicators);
+        }).catch(function(err) {
+          if (requestVersion !== metricsRequestVersion) return;
+          showError('Erro ao carregar indicadores: ' + err.message);
+        });
+      }
+
+      function analyzePattern() {
+        const sessionId = getSelectedSessionId();
+        if (!sessionId) {
+          alert('Selecione uma sessão ativa.');
+          return;
+        }
+        const studentId = getSelectedSubjectId();
+        if (!studentId) {
+          alert('Selecione o participante pseudonimizado para validar o consentimento.');
+          return;
+        }
+
+        showAiLoading();
+
+        return ApiClient.call(SERVER_ID, 'analyzePattern', {
+          token: TOKEN,
+          sessionId: sessionId,
+          studentId: studentId
+        }).then(function(analysis) {
+          renderAiResults(analysis);
+        }).catch(function(err) {
+          hideAiResults();
+          alert('Erro na análise IA: ' + err.message);
+        });
+      }
+
+      // ────────────────────────────────────────────────────────────────────
+      // RENDERIZAÇÃO
+      // ────────────────────────────────────────────────────────────────────
+
+      function renderSessionSelect(sessions) {
+        const select = document.getElementById('session-select');
+        if (!sessions || sessions.length === 0) {
+          select.innerHTML = '<option value="">Nenhuma sessão ativa</option>';
+          return;
+        }
+        
+        select.innerHTML = sessions.map(function(s) {
+          return '<option value="' + escapeHtml(s.id) + '">' +
+            escapeHtml(s.aplicacao || 'Sessão') + ' — ' +
+            formatDate(s.inicio) +
+            '</option>';
+        }).join('');
+        
+        select.onchange = function() {
+          refresh();
+          clearAiResults();
+        };
+      }
+
+      function renderSubjectSelect(subjects) {
+        const select = document.getElementById('subject-select');
+        if (!subjects || subjects.length === 0) {
+          select.innerHTML = '<option value="">Nenhum participante disponível</option>';
+          return;
+        }
+        select.innerHTML = '<option value="">Selecione para análise com IA</option>' +
+          subjects.map(function(subject) {
+            return '<option value="' + escapeHtml(subject.id) + '">' +
+              escapeHtml(subject.label) + '</option>';
+          }).join('');
+      }
+
+      function renderIndicators(metrics) {
+        const totalRegressions = Number(metrics.avgRegressionCount || 0) * Number(metrics.validRecords || 0);
+        const html =
+          '<div class="metrics-grid">' +
+            metricCard('Fixações Registradas', metrics.validRecords || metrics.totalRecords, metrics.totalRecords + ' amostras agregadas') +
+            metricCard('Duração Média de Fixação', formatNumber(metrics.avgFixationDuration, 0) + ' ms', 'Indicador agregado da sessão') +
+            metricCard('Regressões (estimativa total)', formatNumber(totalRegressions, 0), 'Média: ' + formatNumber(metrics.avgRegressionCount, 1) + '/amostra') +
+            metricCard('Razão Teta/Alfa (EEG)', formatNumber(metrics.avgThetaAlphaRatio, 2), 'Indicador agregado da sessão') +
+          '</div>' +
+          '<div style="margin-top:16px"><div class="metric-label">Tendência Geral</div>' +
+            '<span class="trend-badge trend-' + escapeHtml(String(metrics.trend || 'INSUFICIENTE').toLowerCase()) + '">' +
+            escapeHtml(metrics.trend || 'INSUFICIENTE') + '</span></div>';
+        document.getElementById('metrics-content').innerHTML = html;
+      }
+
+      function renderMetrics(records) {
+        const metrics = calculateMetrics(records);
+        const html = 
+          '<div class="metrics-grid">' +
+            metricCard('Fixações Registradas', metrics.totalFixations, metrics.totalRecords + ' amostras POG') +
+            metricCard('Duração Média de Fixação', formatNumber(metrics.avgFixationDuration, 1) + ' ms',
+              metrics.fixationInterpretation) +
+            metricCard('Regressões (Total)', metrics.totalRegressions,
+              metrics.totalRegressions > 0 ? 'Média: ' + formatNumber(metrics.avgRegressions, 1) + '/amostra' : 'Sem regressões') +
+            metricCard('Razão Teta/Alfa (EEG)', formatNumber(metrics.avgThetaAlpha, 2),
+              metrics.cognitiveLoadInterpretation) +
+          '</div>' +
+          '<div style="margin-top:16px">' +
+            '<div class="metric-label">Tendência Geral</div>' +
+            '<span class="trend-badge trend-' + metrics.trend.toLowerCase() + '">' + metrics.trend + '</span>' +
+          '</div>' +
+          '<p class="subtitle" style="margin-top:16px">Atualizado em ' +
+            new Date().toLocaleTimeString('pt-BR') +
+          '</p>';
+        
+        document.getElementById('metrics-content').innerHTML = html;
+      }
+
+      function calculateMetrics(records) {
+        const validRecords = records.filter(function(r) {
+          return isFinite(Number(r.fixation_duration_ms)) &&
+                 isFinite(Number(r.regression_count)) &&
+                 isFinite(Number(r.theta_alpha_ratio));
+        });
+
+        if (validRecords.length === 0) {
+          return {
+            totalRecords: records.length,
+            totalFixations: 0,
+            avgFixationDuration: null,
+            totalRegressions: 0,
+            avgRegressions: 0,
+            avgThetaAlpha: null,
+            trend: 'INSUFICIENTE',
+            fixationInterpretation: 'Dados insuficientes',
+            cognitiveLoadInterpretation: 'Dados insuficientes'
+          };
+        }
+
+        const fixationSum = validRecords.reduce(function(sum, r) {
+          return sum + Number(r.fixation_duration_ms);
+        }, 0);
+        
+        const regressionSum = validRecords.reduce(function(sum, r) {
+          return sum + Number(r.regression_count);
+        }, 0);
+        
+        const thetaAlphaSum = validRecords.reduce(function(sum, r) {
+          return sum + Number(r.theta_alpha_ratio);
+        }, 0);
+
+        const avgFixation = fixationSum / validRecords.length;
+        const avgRegression = regressionSum / validRecords.length;
+        const avgTheta = thetaAlphaSum / validRecords.length;
+
+        let fixationInterpretation = 'Faixa típica';
+        if (avgFixation > 400) {
+          fixationInterpretation = 'Longas — pode indicar dificuldade';
+        } else if (avgFixation < 150) {
+          fixationInterpretation = 'Curtas — leitura rápida/superficial';
+        }
+
+        let cognitiveLoadInterpretation = 'Carga cognitiva normal';
+        if (avgTheta > 2.5) {
+          cognitiveLoadInterpretation = 'Carga elevada — sobrecarga fonológica';
+        } else if (avgTheta < 1.2) {
+          cognitiveLoadInterpretation = 'Carga baixa — leitura fluente';
+        }
+
+        let trend = 'NORMAL';
+        if (avgTheta > 2.5 || avgRegression > 3 || avgFixation > 400) {
+          trend = 'DIFICULDADE';
+        } else if (avgTheta < 1.2 && avgRegression < 1 && avgFixation < 200) {
+          trend = 'EXCELENTE';
+        }
+
+        return {
+          totalRecords: records.length,
+          totalFixations: validRecords.length,
+          avgFixationDuration: avgFixation,
+          totalRegressions: regressionSum,
+          avgRegressions: avgRegression,
+          avgThetaAlpha: avgTheta,
+          trend: trend,
+          fixationInterpretation: fixationInterpretation,
+          cognitiveLoadInterpretation: cognitiveLoadInterpretation
+        };
+      }
+
+      function metricCard(label, value, detail) {
+        return '<div class="metric-card">' +
+          '<div class="metric-label">' + escapeHtml(label) + '</div>' +
+          '<div class="metric-value">' + escapeHtml(String(value == null ? '—' : value)) + '</div>' +
+          '<div class="metric-detail">' + escapeHtml(detail || '') + '</div>' +
+          '</div>';
+      }
+
+      function renderAiResults(analysis) {
+        const container = document.getElementById('ai-results-container');
+        const content = document.getElementById('ai-results-content');
+        
+        content.innerHTML = '<p>' + escapeHtml(analysis.insight || analysis.analysis || 'Análise não disponível.') + '</p>';
+        container.style.display = 'block';
+      }
+
+      // ────────────────────────────────────────────────────────────────────
+      // UTILITÁRIOS DE UI
+      // ────────────────────────────────────────────────────────────────────
+
+      function getSelectedSessionId() {
+        const select = document.getElementById('session-select');
+        return select ? select.value : '';
+      }
+
+      function getSelectedSubjectId() {
+        const select = document.getElementById('subject-select');
+        return select ? select.value : '';
+      }
+
+      function showLoading(message) {
+        document.getElementById('metrics-content').innerHTML =
+          '<div class="loading">' + escapeHtml(message || 'Carregando...') + '</div>';
+      }
+
+      function showEmptyState(message, cta) {
+        const content = document.getElementById('metrics-content');
+        content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>' +
+          escapeHtml(message) + '</p></div>';
+        if (cta && cta.label && typeof cta.action === 'function') {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'btn btn-primary';
+          button.textContent = cta.label;
+          button.addEventListener('click', cta.action);
+          content.querySelector('.empty-state').appendChild(button);
+        }
+      }
+
+      function showError(message) {
+        document.getElementById('metrics-content').innerHTML =
+          '<div class="empty-state">' +
+          '<div class="empty-state-icon">⚠️</div>' +
+          '<p style="color:#ea4335">' + escapeHtml(message) + '</p>' +
+          '</div>';
+      }
+
+      function showAiLoading() {
+        const container = document.getElementById('ai-results-container');
+        const content = document.getElementById('ai-results-content');
+        content.innerHTML = '<p>🤖 Analisando padrão de leitura...</p>';
+        container.style.display = 'block';
+      }
+
+      function clearAiResults() {
+        document.getElementById('ai-results-container').style.display = 'none';
+      }
+
+      function hideAiResults() {
+        clearAiResults();
+      }
+
+      function formatNumber(value, decimals) {
+        if (value == null || !isFinite(value)) return '—';
+        return Number(value).toFixed(decimals || 0);
+      }
+
+      function formatDate(isoString) {
+        if (!isoString) return '—';
+        try {
+          return new Date(isoString).toLocaleString('pt-BR');
+        } catch (e) {
+          return String(isoString);
+        }
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // ────────────────────────────────────────────────────────────────────
+      // INICIALIZAÇÃO
+      // ────────────────────────────────────────────────────────────────────
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      return {
+        refresh: refresh,
+        analyzePattern: analyzePattern
+      };
+    })();
+  </script>
+
+    </main>
+</body>
+</html>

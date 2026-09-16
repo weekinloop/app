@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <?!= include('SharedTokens'); ?>
+<base target="_top">
+  <title>Neuro-educação Personalizada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-dark: #1557b0;
+      --secondary: #188038;
+      --warning: #b06000;
+      --danger: #c5221f;
+      --bg: #15171c;
+      --surface: #20242b;
+      --surface-muted: #272b33;
+      --text: #e9ecf1;
+      --text-muted: #b2b9c4;
+      --border: #343941;
+      --focus: #9bbbe6;
+      --radius: 10px;
+      --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible,
+    select:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(11, 87, 208, 0.3);
+      outline-offset: 2px;
+    }
+    .skip-link {
+      position: fixed; left: 12px; top: -60px; z-index: 10000;
+      background: var(--text); color: var(--bg); padding: 10px 14px;
+      border-radius: 6px;
+    }
+    .skip-link:focus { top: 12px; }
+    .hidden { display: none !important; }
+    #app-container { min-height: 100vh; display: flex; flex-direction: column; }
+    #main-layout { display: flex; flex: 1; min-height: 0; }
+    #sidebar-container {
+      width: 250px; flex: 0 0 250px; background: var(--surface);
+      border-right: 1px solid var(--border);
+    }
+    #content-area {
+      flex: 1; min-width: 0; padding: 24px;
+      overflow-y: auto;
+    }
+    #content-area.login-mode { padding: 0; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .view-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 20px;
+    }
+    .view-header h1, .view-header h2 { margin: 0; font-size: clamp(1.35rem, 2vw, 1.75rem); }
+    .view-subtitle { color: var(--text-muted); margin: 4px 0 0; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+    }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .metric-label { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+    .metric-value { color: var(--primary); font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+    .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .btn {
+      min-height: 44px; padding: 9px 16px; border: 1px solid transparent;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+    .btn:disabled { opacity: 0.6; cursor: wait; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-quiet { background: transparent; color: var(--primary); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field.full { grid-column: 1 / -1; }
+    .form-field label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%; min-height: 44px; padding: 9px 11px;
+      border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); color: var(--text);
+    }
+    .form-field textarea { min-height: 88px; resize: vertical; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    th, td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--text-muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .status {
+      display: inline-flex; align-items: center; min-height: 28px;
+      padding: 3px 9px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+      background: var(--surface-muted);
+    }
+    .status-success { background: #e6f4ea; color: #137333; }
+    .status-warning { background: #fef7e0; color: #8a4b00; }
+    .status-danger { background: #fce8e6; color: #b3261e; }
+    .loading-state, .empty-state, .error-state {
+      text-align: center; padding: 44px 20px; color: var(--text-muted);
+      background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
+    }
+    .error-state { color: var(--danger); }
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 9999; display: flex;
+      align-items: center; justify-content: center;
+      background: rgba(10, 12, 16, 0.82); color: var(--primary); font-weight: 700;
+    }
+    #app-toast {
+      position: fixed; right: 20px; bottom: 20px; z-index: 10000;
+      max-width: 420px; padding: 12px 16px; border-radius: 8px;
+      background: var(--text); color: #fff; box-shadow: 0 6px 22px rgba(0,0,0,0.25);
+    }
+    #app-toast.error { background: var(--danger); }
+    #app-toast.success { background: var(--secondary); }
+    @media (max-width: 900px) {
+      .grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #sidebar-container {
+        position: fixed; left: 0; top: 56px; bottom: 0; z-index: 300;
+        transform: translateX(-100%); transition: transform 0.2s ease;
+      }
+      #sidebar-container.open { transform: translateX(0); }
+      #content-area { padding: 18px; }
+    }
+    @media (max-width: 620px) {
+      .grid-4, .grid-3, .grid-2, .form-grid { grid-template-columns: 1fr; }
+      .view-header { align-items: flex-start; flex-direction: column; }
+      #content-area { padding: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+    }
+  
+
+
+/* codex-school-community-ux: ajustes finos para uso recorrente por comunidade escolar */
+:root {
+  --codex-school-focus: #ffd166;
+  --codex-school-touch: 44px;
+  --codex-school-radius: 8px;
+  --codex-school-field-radius: 7px;
+  --codex-school-form-gap: 14px;
+  --codex-school-field-border: rgba(120, 132, 156, 0.45);
+  --codex-school-field-bg: rgba(255, 255, 255, 0.96);
+  --codex-school-field-text: #1f2937;
+  --codex-school-muted-text: #64748b;
+  --codex-school-soft-surface: rgba(248, 250, 252, 0.82);
+  --codex-school-safe-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+:where(html) {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+:where(body) {
+  overscroll-behavior-y: contain;
+}
+
+:where(p, li, dd, dt, blockquote, figcaption, label, td, th) {
+  line-height: 1.5;
+}
+
+:where(main, .main, .content, .page, .app, .app-shell, .container, .dashboard, .workspace) {
+  padding-bottom: var(--codex-school-safe-bottom);
+}
+
+:where(a, button, .btn, .button, [role="button"], input, select, textarea, summary) {
+  min-height: var(--codex-school-touch);
+  touch-action: manipulation;
+}
+
+:where(button, .btn, .button, [role="button"], input[type="submit"], input[type="button"]) {
+  border-radius: var(--codex-school-radius) !important;
+  font-weight: 700;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--codex-school-focus) !important;
+  outline-offset: 3px !important;
+}
+
+:where(label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  color: var(--codex-gentle-muted, var(--text-muted, var(--codex-school-muted-text)));
+  font-weight: 700;
+}
+
+:where(form) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(fieldset) {
+  border-radius: var(--codex-school-radius) !important;
+  border-color: var(--codex-school-field-border);
+}
+
+:where(legend) {
+  padding-inline: 6px;
+  font-weight: 700;
+}
+
+:where(.form-group, .input-field, .field, .form-field, .control-group) {
+  margin-bottom: var(--codex-school-form-gap);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  width: min(100%, 100%);
+  border-radius: var(--codex-school-field-radius) !important;
+  border-color: var(--codex-school-field-border) !important;
+  background-color: var(--input-bg, var(--field-bg, var(--codex-school-field-bg)));
+  color: var(--input-text, var(--text-color, var(--codex-school-field-text)));
+  font-size: 16px !important;
+}
+
+:where(input::placeholder, textarea::placeholder) {
+  color: var(--placeholder-color, #94a3b8);
+  opacity: 1;
+}
+
+:where(input[required], select[required], textarea[required]) {
+  border-left: 3px solid var(--codex-gentle-primary-strong, #aecbfa) !important;
+}
+
+:where(input:disabled, select:disabled, textarea:disabled, button:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed !important;
+  opacity: 0.68;
+}
+
+:where(.help, .hint, .help-text, .form-help, small) {
+  line-height: 1.45;
+  color: var(--codex-gentle-muted, var(--text-muted, var(--codex-school-muted-text)));
+}
+
+:where(.actions, .form-actions, .button-row, .toolbar, .topbar, nav, [role="toolbar"]) {
+  gap: 8px;
+}
+
+:where(.actions, .form-actions, .button-row) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+:where(.actions, .form-actions, .button-row) > :where(button, .btn, .button, [role="button"]) {
+  flex: 1 1 148px;
+}
+
+:where(.card, .panel, .box, .tile, .item, .list-item, .action-card) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(.section, .surface, .widget, .modal-content, .dialog-content, .drawer, .dropdown, .menu) {
+  border-radius: var(--codex-school-radius) !important;
+}
+
+:where(.filters, .search-panel, .form-section) {
+  border-radius: var(--codex-school-radius) !important;
+  background: var(--codex-school-soft-surface);
+}
+
+:where(table) {
+  border-collapse: collapse;
+}
+
+:where(table, .table, .data-table) {
+  max-width: 100%;
+}
+
+:where(.table-wrap, .table-wrapper, .table-container, .responsive-table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+:where(th, td) {
+  vertical-align: top;
+}
+
+:where(.toast, .alert, .notice, .snackbar, [role="status"], [role="alert"]) {
+  border-radius: var(--codex-school-radius) !important;
+  line-height: 1.45;
+}
+
+@media (max-width: 420px) {
+  :where(body) {
+    font-size: 16px;
+  }
+
+  :where(h1) {
+    font-size: clamp(1.55rem, 1.35rem + 1vw, 2rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  :where(h2) {
+    font-size: clamp(1.25rem, 1.1rem + 0.8vw, 1.55rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  :where(.toolbar, .topbar, nav, [role="toolbar"]) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  :where(.hide-mobile, .desktop-only) {
+    display: none !important;
+  }
+}
+</style>
+  <style id="codex-mobile-a11y">
+  /* Mobile-first accessibility baseline for Chrome and Google-style readability. */
+  :where(html) {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  :where(body) {
+    min-width: 0;
+    overflow-x: hidden;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :where(p, li, dd, dt, blockquote, figcaption, label, td, th, input, select, textarea, button) {
+    line-height: 1.5;
+  }
+
+  :where(p, li, dd, dt, blockquote, figcaption) {
+    max-width: 72ch;
+  }
+
+  :where(button, [role="button"], input, select, textarea, a) {
+    touch-action: manipulation;
+  }
+
+  :where(button, [role="button"], input:not([type="hidden"]), select, textarea) {
+    font: inherit;
+    min-height: 44px;
+  }
+
+  :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid #1a73e8;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
+  }
+
+  :where(img, video, canvas, svg, iframe) {
+    max-width: 100%;
+  }
+
+  :where(img, video, canvas, svg) {
+    height: auto;
+  }
+
+  :where(table) {
+    max-width: 100%;
+  }
+
+  :where(.table-responsive, .table-wrapper, .data-table, .table-container, .responsive-table) {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :where(.container, .content, .main, .page, .page-content, .app-content, main) {
+    min-width: 0;
+  }
+
+  :where(.row, .cards, .card-grid, .grid, .toolbar, .actions, .button-group, .form-row) {
+    min-width: 0;
+  }
+
+  @media (max-width: 640px) {
+    :where(body) {
+      font-size: 16px;
+    }
+
+    :where(.container, .content, .page-content, .app-content, main) {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    :where(.row, .cards, .card-grid, .grid, .toolbar, .actions, .button-group, .form-row) {
+      flex-wrap: wrap;
+    }
+
+    :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button) {
+      max-width: 100%;
+    }
+
+    :where(.hide-on-mobile) {
+      display: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+<style>
+/* codex-s20-mobile-first: Samsung S20 / Chrome mobile baseline (360x800 CSS px) */
+@media screen {
+  :where(html) {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  :where(*, *::before, *::after) {
+    box-sizing: border-box;
+  }
+  :where(body) {
+    min-width: 320px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  :where(main, .app, .page, .container, .content, .main-content, .dashboard, .view) {
+    max-width: 100%;
+  }
+  :where(img, video, canvas, svg) {
+    max-width: 100%;
+    height: auto;
+  }
+  :where(p, li, td, th, label, legend, button, a, h1, h2, h3, h4, h5, h6) {
+    overflow-wrap: anywhere;
+  }
+  :where(input, select, textarea, button) {
+    font: inherit;
+    max-width: 100%;
+  }
+  :where(input, select, textarea) {
+    font-size: max(16px, 1rem);
+  }
+  :where(button, [role="button"], input, select, textarea, a) {
+    touch-action: manipulation;
+  }
+  :where(.table-wrap, .table-wrapper, .table-responsive, .table-container, .responsive-table, .data-table-wrapper) {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+@media (max-width: 480px) {
+  :where(body) {
+    font-size: 16px;
+  }
+  :where(.grid, .cards, .dashboard-grid, .stats-grid, .form-grid, .filters-grid) {
+    grid-template-columns: 1fr !important;
+  }
+  :where(.toolbar, .actions, .button-row, .filters, .form-actions, .modal-actions, .header-actions) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  :where(.btn, button, input, select, textarea) {
+    min-height: 44px;
+  }
+  :where(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  :where(th, td) {
+    white-space: nowrap;
+  }
+  :where(.card, .panel, .modal, .dialog, .drawer) {
+    max-width: calc(100vw - 24px);
+  }
+}
+@media (max-width: 360px) {
+  :where(body) {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  :where(.card, .panel, .section, .modal-content, .dialog-content) {
+    padding: 12px;
+  }
+  :where(h1) {
+    font-size: clamp(1.45rem, 1.2rem + 2vw, 2rem);
+  }
+  :where(h2) {
+    font-size: clamp(1.2rem, 1rem + 1.4vw, 1.55rem);
+  }
+}
+</style>
+<style>
+/* codex-design-system: shared contrast, button sizing and minimal button icon styling */
+:root {
+  --codex-ds-primary: var(--primary, var(--color-primary, var(--theme-primary, #1a73e8)));
+  --codex-ds-primary-strong: var(--primary-dark, var(--color-primary-strong, var(--theme-primary-dark, #1558d6)));
+  --codex-ds-text: var(--text, var(--color-ink, var(--text-primary, #202124)));
+  --codex-ds-muted: var(--muted, var(--color-muted, var(--text-secondary, #5f6368)));
+  --codex-ds-surface: var(--surface, var(--color-surface, var(--bg-surface, #ffffff)));
+  --codex-ds-border: var(--border, var(--color-border, var(--line, #dadce0)));
+  --codex-ds-focus: #1a73e8;
+  --codex-ds-radius: 8px;
+}
+
+:where(body) {
+  color: var(--codex-ds-text);
+}
+
+:where(.text-muted, .muted, .secondary, small, figcaption, caption) {
+  color: var(--codex-ds-muted);
+}
+
+:where(a) {
+  color: var(--codex-ds-primary);
+}
+
+:where(button, .btn, .button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]) {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.625rem 1rem;
+  border-radius: var(--codex-ds-radius);
+  border: 1px solid transparent;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+:where(.btn, .button, .btn-primary, .button-primary, .primary, button[type="submit"], input[type="submit"]) {
+  background: var(--codex-ds-primary);
+  color: #ffffff;
+}
+
+:where(.btn:hover, .button:hover, button:hover, [role="button"]:hover) {
+  filter: none;
+}
+
+:where(.btn-primary:hover, .button-primary:hover, button[type="submit"]:hover, input[type="submit"]:hover) {
+  background: var(--codex-ds-primary-strong);
+}
+
+:where(.btn-secondary, .button-secondary, .btn.ghost, .button-quiet, .btn-outline, .secondary, button.secondary) {
+  background: var(--codex-ds-surface);
+  color: var(--codex-ds-text);
+  border-color: var(--codex-ds-border);
+}
+
+:where(.btn-small, .btn.sm, .button-small, .button.sm) {
+  min-height: 40px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+:where(.icon-button, .btn-icon, button.icon, button[aria-label]:not([aria-label=""])) {
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: var(--codex-ds-radius);
+}
+
+:where(button svg, .btn svg, .button svg, [role="button"] svg, button .material-icons, .btn .material-icons, .button .material-icons, button .icon, .btn .icon, .button .icon) {
+  width: 1.125rem;
+  height: 1.125rem;
+  min-width: 1.125rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  stroke-width: 2;
+  flex: 0 0 auto;
+}
+
+:where(button .material-icons, .btn .material-icons, .button .material-icons) {
+  font-feature-settings: "liga";
+  vertical-align: middle;
+}
+
+:where(button:focus-visible, .btn:focus-visible, .button:focus-visible, [role="button"]:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible) {
+  outline: 3px solid var(--codex-ds-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--codex-ds-surface) 80%, transparent);
+}
+
+:where(button:disabled, .btn:disabled, .button:disabled, [aria-disabled="true"]) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  :where(.btn, .button, button, input[type="button"], input[type="submit"], input[type="reset"]) {
+    width: auto;
+  }
+  :where(.form-actions > .btn, .form-actions > .button, .form-actions > button, .actions > .btn, .actions > .button, .actions > button) {
+    width: 100%;
+  }
+}
+</style>
+<style>
+/* codex-gentle-dark-theme: default graphite theme with soft, kind UI accents */
+:root {
+  color-scheme: dark;
+  --codex-gentle-bg: #15171c;
+  --codex-gentle-bg-soft: #1a1d23;
+  --codex-gentle-surface: #20242b;
+  --codex-gentle-surface-2: #272b33;
+  --codex-gentle-border: #343941;
+  --codex-gentle-text: #eef1f5;
+  --codex-gentle-muted: #c8ced8;
+  --codex-gentle-dim: #9aa4b2;
+  --codex-gentle-primary: #8ab4f8;
+  --codex-gentle-primary-strong: #aecbfa;
+  --codex-gentle-accent: #8fa0b8;
+  --codex-gentle-success: #9be7c1;
+  --bg: var(--codex-gentle-bg);
+  --background: var(--codex-gentle-bg);
+  --surface: var(--codex-gentle-surface);
+  --panel: var(--codex-gentle-surface);
+  --card: var(--codex-gentle-surface);
+  --text: var(--codex-gentle-text);
+  --text-main: var(--codex-gentle-text);
+  --text-primary: var(--codex-gentle-text);
+  --text-muted: var(--codex-gentle-muted);
+  --muted: var(--codex-gentle-muted);
+  --border: var(--codex-gentle-border);
+  --line: var(--codex-gentle-border);
+  --primary: var(--codex-gentle-primary);
+  --primary-dark: #6ea0ef;
+  --codex-ds-primary: var(--codex-gentle-primary);
+  --codex-ds-primary-strong: var(--codex-gentle-primary-strong);
+  --codex-ds-text: var(--codex-gentle-text);
+  --codex-ds-muted: var(--codex-gentle-muted);
+  --codex-ds-surface: var(--codex-gentle-surface);
+  --codex-ds-border: var(--codex-gentle-border);
+}
+
+:where(html, body) {
+  background: var(--codex-gentle-bg) !important;
+  color: var(--codex-gentle-text) !important;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:where(main, .app, .page, .layout, .content, .main-content, .app-content, .container, .dashboard, .view) {
+  background-color: transparent !important;
+  color: var(--codex-gentle-text) !important;
+}
+
+:where(.card, .panel, .section, .surface, .box, .widget, .modal-content, .dialog-content, .drawer, .dropdown, .menu, .table-wrapper, .table-wrap, .table-container, form) {
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+              var(--codex-gentle-surface) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28) !important;
+}
+
+:where(header, nav, aside, footer, .navbar, .sidebar, .topbar, .app-header, .app-footer) {
+  background: rgba(12, 15, 21, 0.92) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+}
+
+:where(h1, h2, h3, h4, h5, h6, p, li, label, span, strong, td, th, legend, small, caption) {
+  color: inherit;
+}
+
+:where(h1, .page-title, .view-title) {
+  color: var(--codex-gentle-text) !important;
+}
+
+:where(h1:not(.no-emoji), .page-title:not(.no-emoji), .view-title:not(.no-emoji))::after {
+  content: "";
+  font-size: 0.82em;
+}
+
+:where(.empty-state, .empty, .no-data, .no-results, .loading, .placeholder)::before {
+  content: "";
+}
+
+:where(.text-muted, .muted, .secondary, .subtitle, .description, .help-text, .hint, small, figcaption, caption) {
+  color: var(--codex-gentle-muted) !important;
+}
+
+:where(a) {
+  color: var(--codex-gentle-primary-strong) !important;
+}
+
+:where(input, select, textarea) {
+  background: var(--codex-gentle-bg-soft) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+}
+
+:where(input::placeholder, textarea::placeholder) {
+  color: var(--codex-gentle-dim) !important;
+}
+
+:where(table) {
+  color: var(--codex-gentle-text) !important;
+}
+
+:where(th) {
+  color: var(--codex-gentle-muted) !important;
+  background: rgba(255,255,255,0.035) !important;
+}
+
+:where(td) {
+  border-color: var(--codex-gentle-border) !important;
+}
+
+:where(button, .btn, .button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]) {
+  background: var(--codex-gentle-surface-2) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+  box-shadow: none !important;
+}
+
+:where(.btn, .button, .btn-primary, .button-primary, .primary, button[type="submit"], input[type="submit"]) {
+  background: linear-gradient(180deg, rgba(174, 203, 250, 0.24), rgba(138, 180, 248, 0.16)),
+              #182235 !important;
+  color: #f8fbff !important;
+  border-color: rgba(174, 203, 250, 0.45) !important;
+}
+
+:where(button[type="submit"]:not(.icon-button):not(.btn-icon), input[type="submit"])::after {
+  content: "";
+  font-size: 0.9em;
+}
+
+:where(.btn-secondary, .button-secondary, .btn.ghost, .button-quiet, .btn-outline, .secondary, button.secondary) {
+  background: rgba(255,255,255,0.035) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+}
+
+:where(.badge, .tag, .chip, .pill, .status) {
+  background: rgba(248, 199, 220, 0.12) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: rgba(248, 199, 220, 0.26) !important;
+}
+
+:where(hr) {
+  border-color: var(--codex-gentle-border) !important;
+}
+
+:where(svg, canvas, img) {
+  color: inherit;
+}
+</style>
+<style>
+/* codex-theme-toggle: sun-moon control integrated with page buttons */
+:root {
+  --codex-theme-toggle-bg: rgba(255,255,255,0.055);
+  --codex-theme-toggle-border: rgba(255,255,255,0.16);
+  --codex-theme-toggle-text: var(--codex-gentle-text, #eef1f5);
+}
+
+:root[data-theme="light"],
+html[data-theme="light"],
+body[data-theme="light"] {
+  color-scheme: light;
+  --codex-gentle-bg: #f7f8fb;
+  --codex-gentle-bg-soft: #ffffff;
+  --codex-gentle-surface: #ffffff;
+  --codex-gentle-surface-2: #f1f4f8;
+  --codex-gentle-border: #d8dee8;
+  --codex-gentle-text: #20242a;
+  --codex-gentle-muted: #596273;
+  --codex-gentle-dim: #6f7a8a;
+  --codex-gentle-primary: #1a73e8;
+  --codex-gentle-primary-strong: #1558d6;
+  --codex-gentle-accent: #b84377;
+  --codex-ds-primary: var(--codex-gentle-primary);
+  --codex-ds-primary-strong: var(--codex-gentle-primary-strong);
+  --codex-ds-text: var(--codex-gentle-text);
+  --codex-ds-muted: var(--codex-gentle-muted);
+  --codex-ds-surface: var(--codex-gentle-surface);
+  --codex-ds-border: var(--codex-gentle-border);
+}
+
+html[data-theme="light"],
+html[data-theme="light"] body,
+body[data-theme="light"] {
+  background: radial-gradient(circle at 10% 0%, rgba(26,115,232,0.09), transparent 28%),
+              radial-gradient(circle at 90% 8%, rgba(184,67,119,0.07), transparent 24%),
+              #f7f8fb !important;
+  color: var(--codex-gentle-text) !important;
+}
+
+html[data-theme="light"] :where(.card, .panel, .section, .surface, .box, .widget, .modal-content, .dialog-content, .drawer, .dropdown, .menu, .table-wrapper, .table-wrap, .table-container, form) {
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96)) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+  box-shadow: 0 10px 28px rgba(31,41,55,0.10) !important;
+}
+
+html[data-theme="light"] :where(header, nav, aside, footer, .navbar, .sidebar, .topbar, .app-header, .app-footer) {
+  background: rgba(255,255,255,0.92) !important;
+  color: var(--codex-gentle-text) !important;
+  border-color: var(--codex-gentle-border) !important;
+}
+
+.codex-theme-toggle {
+  width: auto !important;
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 2147483000;
+  width: auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--codex-theme-toggle-border);
+  border-radius: 999px;
+  background: var(--codex-theme-toggle-bg);
+  color: var(--codex-theme-toggle-text);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.codex-theme-toggle__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.codex-theme-toggle__label {
+  font-size: 0.875rem;
+}
+
+.codex-theme-toggle.is-integrated {
+  position: static;
+  z-index: auto;
+  margin-left: 0.5rem;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (max-width: 480px) {
+  .codex-theme-toggle:not(.is-integrated) .codex-theme-toggle__label {
+    display: none;
+  }
+}
+</style>
+
+
+<style id="up-oracular-design-system">
+:root {
+  color-scheme: dark;
+  --uo-bg: #15171c;
+  --uo-panel: #20242b;
+  --uo-text: #e9ecf1;
+  --uo-muted: #b2b9c4;
+  --uo-border: #343941;
+  --uo-accent: #7aa2d6;
+  --uo-radius-group: 10px;
+  --uo-radius-control: 8px;
+}
+
+html, body {
+  background: var(--uo-bg) !important;
+  color: var(--uo-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body, input, select, textarea, button {
+  color: var(--uo-text);
+}
+
+.card, .panel, .modal, .dialog, dialog, .container,
+.box, .widget, .section, .sidebar, .drawer, .popover,
+[role="dialog"], [class*="card"], [class*="panel"] {
+  background-color: var(--uo-panel) !important;
+  border-color: var(--uo-border) !important;
+  border-radius: var(--uo-radius-group) !important;
+}
+
+button, input, select, textarea, .btn, .button,
+[role="button"], [role="menuitem"], .dropdown-item,
+.menu-item, [class*="button"], [class*="dropdown-item"] {
+  border-radius: var(--uo-radius-control) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, select, textarea {
+  background-color: var(--uo-panel) !important;
+  border: 1px solid var(--uo-border) !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+
+label, .form-label, [class*="form-label"] {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--uo-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.uo-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.uo-feedback-box {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--uo-border);
+  border-radius: var(--uo-radius-group);
+  background: var(--uo-panel);
+  color: var(--uo-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.uo-feedback-box.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uo-feedback-box[data-kind="ok"] {
+  border-color: #8fc2a6;
+  color: #8fc2a6;
+}
+
+.uo-feedback-box[data-kind="err"] {
+  border-color: #d98b93;
+  color: #d98b93;
+}
+
+form[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+form[aria-busy="true"] :is(button, input[type="submit"], input[type="button"]) {
+  pointer-events: none;
+}
+
+button, .btn-primary, .button-primary,
+[class*="primary"][role="button"] {
+  background-color: var(--uo-accent) !important;
+}
+
+p, small, .muted, .secondary, .subtitle,
+[class*="muted"], [class*="secondary"] {
+  color: var(--uo-muted) !important;
+}
+
+hr, table, th, td, fieldset {
+  border-color: var(--uo-border) !important;
+}
+
+a {
+  color: var(--uo-accent);
+}
+
+/* Geometrias funcionais permanecem circulares. */
+.avatar, .spinner, .loading-ring, .dot, .status-dot,
+[class*="avatar"], [class*="spinner"], [class*="loading-ring"] {
+  border-radius: 50% !important;
+}
+</style>
+<script id="up-oracular-form-feedback">
+(function () {
+  'use strict';
+  if (window.UpOracularFeedback) return;
+
+  var timer = null;
+  function notify(kind, message) {
+    var box = document.getElementById('uo-feedback-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'uo-feedback-box';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      box.classList.remove('is-visible');
+    }, 1000);
+  }
+
+  function connectLabels(form) {
+    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (field, index) {
+      var id = field.id || ('uo-field-' + index + '-' + Math.random().toString(36).slice(2, 7));
+      field.id = id;
+      var label = form.querySelector('label[for="' + id + '"]');
+      if (!label) {
+        var sibling = field.previousElementSibling;
+        if (sibling && sibling.tagName === 'LABEL') {
+          sibling.htmlFor = id;
+          label = sibling;
+        }
+      }
+      if (label && field.parentElement && !field.parentElement.classList.contains('uo-field')) {
+        field.parentElement.classList.add('uo-field');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(connectLabels);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    form.setAttribute('aria-busy', 'true');
+    notify('ok', 'Enviando...');
+    window.setTimeout(function () {
+      if (form.getAttribute('aria-busy') === 'true') {
+        form.removeAttribute('aria-busy');
+      }
+    }, 10000);
+  }, true);
+
+  window.UpOracularFeedback = {
+    ok: function (message) { notify('ok', message); },
+    err: function (message) { notify('err', message); },
+    done: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('ok', message);
+    },
+    fail: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('err', message);
+    }
+  };
+}());
+</script>
+
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style id="cdx-mi-style">.cdx-mi{font-size:1.1em;line-height:1;vertical-align:-0.15em}</style>
+  <style id="cdx-border-to-color">
+/* Padronização de borders → cores complementares (FROTA-20) */
+input:not([type="hidden"]),
+textarea,
+select,
+[class*="input"],
+[class*="field"],
+[class*="form"],
+.card,
+.panel,
+.box,
+.container,
+.modal,
+[class*="modal"],
+[class*="dialog"],
+dialog {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+input:not([type="hidden"]),
+textarea,
+select {
+  background-color: #eef1f5 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 2px #1f2937 !important;
+}
+  </style>
+
+  <style id="fleet-mobile-wcag-aa">
+    /* Contrato FROTA: ergonomia S20 e WCAG 2.1 AA. */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    :is(button, [role="button"], input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+      min-width: 48px !important;
+      min-height: 48px !important;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+<button id="codex-theme-toggle" class="codex-theme-toggle btn btn-secondary" type="button" aria-label="Alternar tema claro e escuro" title="Alternar tema">
+  <span class="codex-theme-toggle__icon" aria-hidden="true">🌙</span>
+  <span class="codex-theme-toggle__label">Tema</span>
+</button>
+  <a class="skip-link" href="#content-area">Pular para o conteúdo</a>
+  <div id="loading-overlay" role="status">Carregando NeuroEdu...</div>
+  <div id="app-toast" class="hidden" role="status" aria-live="polite"></div>
+
+  <script>
+    function readNeuroEduToken_() {
+      try {
+        var hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+        var queryParams = new URLSearchParams(window.location.search || '');
+        return hashParams.get('tok') || hashParams.get('token') ||
+          queryParams.get('tok') || queryParams.get('token') || '';
+      } catch (error) {
+        return '';
+      }
+    }
+
+    var NeuroEdu = {
+      appVersion: '<?= appVersion ?>',
+      token: readNeuroEduToken_() || sessionStorage.getItem('neuro_token') || null,
+      userId: sessionStorage.getItem('neuro_userId') || null,
+      role: sessionStorage.getItem('neuro_role') || null,
+      username: sessionStorage.getItem('neuro_username') || null,
+      currentView: null,
+      currentApp: null,
+      selectedStudentId: null,
+      views: {},
+
+      setSession: function(data) {
+        if (data.token) this.token = data.token;
+        this.userId = data.userId || this.userId;
+        this.role = data.role || this.role;
+        this.username = data.username || this.username;
+        sessionStorage.setItem('neuro_token', this.token || '');
+        sessionStorage.setItem('neuro_userId', this.userId || '');
+        sessionStorage.setItem('neuro_role', this.role || '');
+        sessionStorage.setItem('neuro_username', this.username || '');
+        // Atualiza visibilidade do menu admin após definir role
+        if (window.NeuroEduSidebar) window.NeuroEduSidebar.updateAdminMenu();
+      },
+
+      clearSession: function() {
+        this.token = this.userId = this.role = this.username = null;
+        sessionStorage.removeItem('neuro_token');
+        sessionStorage.removeItem('neuro_userId');
+        sessionStorage.removeItem('neuro_role');
+        sessionStorage.removeItem('neuro_username');
+      },
+
+      api: function(action, payload) {
+        var request = Object.assign({}, payload || {}, {
+          action: action,
+          token: this.token
+        });
+        return new Promise(function(resolve, reject) {
+          google.script.run
+            .withSuccessHandler(function(response) {
+              if (response && response.success) {
+                resolve(response.data);
+                return;
+              }
+              if (response && response.code === 'SESSION_INVALID') {
+                NeuroEdu.clearSession();
+                NeuroEdu.showLogin('Sua sessão expirou. Entre novamente.');
+              }
+              var error = new Error(response && response.error ? response.error : 'Operação não concluída.');
+              error.response = response;
+              reject(error);
+            })
+            .withFailureHandler(function(error) {
+              reject(new Error(error && error.message ? error.message : 'Falha de comunicação com o servidor.'));
+            })
+            .apiRequest(request);
+        });
+      },
+
+      registerView: function(id, init, destroy) {
+        this.views[id] = { init: init || function() {}, destroy: destroy || function() {} };
+      },
+
+      navigate: function(viewId) {
+        if (!this.token && viewId !== 'login') viewId = 'login';
+        if (this.currentView && this.views[this.currentView]) {
+          this.views[this.currentView].destroy();
+        }
+        // Limpa monitorSessionId ao sair da view de monitoramento
+        if (this.currentView === 'monitoring' && viewId !== 'monitoring') {
+          this.monitorSessionId = null;
+        }
+        document.querySelectorAll('.view').forEach(function(view) {
+          view.classList.remove('active');
+        });
+        var target = document.getElementById('view-' + viewId);
+        if (!target) {
+          this.toast('Tela não encontrada: ' + viewId, 'error');
+          return;
+        }
+        target.classList.add('active');
+        this.currentView = viewId;
+        this.setShell(viewId !== 'login');
+        document.querySelectorAll('[data-view]').forEach(function(item) {
+          var active = item.getAttribute('data-view') === viewId;
+          item.classList.toggle('active', active);
+          if (active) item.setAttribute('aria-current', 'page');
+          else item.removeAttribute('aria-current');
+        });
+        if (this.views[viewId]) {
+          Promise.resolve(this.views[viewId].init()).catch(function(error) {
+            NeuroEdu.toast(error.message, 'error');
+          });
+        }
+        this.closeSidebar(false);
+        // Atualiza visibilidade do menu admin após cada navegação
+        if (window.NeuroEduSidebar) window.NeuroEduSidebar.updateAdminMenu();
+        target.setAttribute('tabindex', '-1');
+        target.focus();
+      },
+
+      openApplication: function(name) {
+        this.currentApp = name;
+        this.navigate('app');
+      },
+
+      openStudent: function(studentId, fromView) {
+        this.selectedStudentId = studentId;
+        // Registra a view de origem para o botão "Voltar" do perfil
+        this.studentReturnView = fromView || this.currentView || 'students';
+        this.navigate('profile');
+      },
+
+      setShell: function(visible) {
+        document.getElementById('header-container').classList.toggle('hidden', !visible);
+        var sidebar = document.getElementById('sidebar-container');
+        sidebar.classList.toggle('hidden', !visible);
+        sidebar.setAttribute('aria-hidden', visible && window.innerWidth > 900 ? 'false' : 'true');
+        document.getElementById('content-area').classList.toggle('login-mode', !visible);
+      },
+
+      closeSidebar: function(returnFocus) {
+        var sidebar = document.getElementById('sidebar-container');
+        var button = document.getElementById('header-menu-button');
+        if (sidebar) {
+          sidebar.classList.remove('open');
+          if (window.innerWidth <= 900) sidebar.setAttribute('aria-hidden', 'true');
+        }
+        if (button) {
+          button.setAttribute('aria-expanded', 'false');
+          button.setAttribute('aria-label', 'Abrir menu');
+          if (returnFocus) button.focus();
+        }
+      },
+
+      toggleSidebar: function() {
+        var sidebar = document.getElementById('sidebar-container');
+        var button = document.getElementById('header-menu-button');
+        if (!sidebar || !button) return;
+        var open = !sidebar.classList.contains('open');
+        sidebar.classList.toggle('open', open);
+        sidebar.setAttribute('aria-hidden', open ? 'false' : 'true');
+        button.setAttribute('aria-expanded', String(open));
+        button.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+        if (open) {
+          var firstItem = sidebar.querySelector('.sidebar-item:not([disabled])');
+          if (firstItem) firstItem.focus();
+        }
+      },
+
+      showLogin: function(message) {
+        this.setShell(false);
+        this.navigate('login');
+        if (message && window.showLoginError) window.showLoginError(message);
+      },
+
+      toast: function(message, type) {
+        var toast = document.getElementById('app-toast');
+        toast.textContent = message;
+        toast.className = type || '';
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(function() { toast.classList.add('hidden'); }, 4200);
+      },
+
+      escape: function(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      },
+
+      formatDate: function(value) {
+        if (!value) return '-';
+        var date = new Date(value);
+        return isNaN(date.getTime()) ? this.escape(value) : date.toLocaleString('pt-BR');
+      },
+
+      statusClass: function(value) {
+        var normalized = String(value || '').toLowerCase();
+        if (/crit|erro|offline|encerrada/.test(normalized)) return 'status-danger';
+        if (/aviso|pendente|pausada/.test(normalized)) return 'status-warning';
+        if (/ativa|online|resolvido|sucesso/.test(normalized)) return 'status-success';
+        return '';
+      },
+
+      state: {
+        loading: function(text) {
+          return '<div class="loading-state" role="status">' + NeuroEdu.escape(text || 'Carregando...') + '</div>';
+        },
+        empty: function(text) {
+          return '<div class="empty-state">' + NeuroEdu.escape(text || 'Nenhum registro encontrado.') + '</div>';
+        },
+        error: function(text) {
+          return '<div class="error-state" role="alert">' + NeuroEdu.escape(text || 'Não foi possível carregar os dados.') + '</div>';
+        }
+      }
+    };
+  </script>
+
+  <div id="app-container">
+    <div id="header-container" class="hidden"><?!= include('Header') ?></div>
+    <div id="main-layout">
+      <aside id="sidebar-container" class="hidden" aria-label="Navegação principal"><?!= include('Sidebar') ?></aside>
+      <main id="content-area" class="login-mode">
+        <section id="view-login" class="view"><?!= include('Login') ?></section>
+        <section id="view-dashboard" class="view"><?!= include('Dashboard') ?></section>
+        <section id="view-students" class="view"><?!= include('StudentsView') ?></section>
+        <section id="view-profile" class="view"><?!= include('StudentProfile') ?></section>
+        <section id="view-teachers" class="view"><?!= include('TeachersView') ?></section>
+        <section id="view-classes" class="view"><?!= include('ClassesView') ?></section>
+        <section id="view-sensors" class="view"><?!= include('SensorsView') ?></section>
+        <section id="view-monitoring" class="view"><?!= include('LiveMonitoring') ?></section>
+        <section id="view-sessions" class="view"><?!= include('SessionManager') ?></section>
+        <section id="view-alerts" class="view"><?!= include('AlertsPanel') ?></section>
+        <section id="view-interventions" class="view"><?!= include('InterventionsLog') ?></section>
+        <section id="view-reports" class="view"><?!= include('ReportsGenerator') ?></section>
+        <section id="view-settings" class="view"><?!= include('Settings') ?></section>
+        <section id="view-app" class="view"><?!= include('ApplicationsView') ?></section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      var overlay = document.getElementById('loading-overlay');
+      if (!NeuroEdu.token) {
+        overlay.classList.add('hidden');
+        NeuroEdu.showLogin();
+        return;
+      }
+      NeuroEdu.api('sessionInfo')
+        .then(function(session) {
+          NeuroEdu.setSession(session);
+          if (window.NeuroEduHeader) window.NeuroEduHeader.start();
+          NeuroEdu.navigate('dashboard');
+        })
+        .catch(function() {
+          NeuroEdu.clearSession();
+          NeuroEdu.showLogin('Sua sessão não é mais válida.');
+        })
+        .finally(function() {
+          overlay.classList.add('hidden');
+        });
+    });
+  </script>
+<script>
+(function() {
+  var STORAGE_KEY = 'codex.preferredTheme';
+
+  function applyTheme(theme) {
+    var next = theme === 'light' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    if (document.body) document.body.setAttribute('data-theme', next);
+    var btn = document.getElementById('codex-theme-toggle');
+    if (btn) {
+      var icon = btn.querySelector('.codex-theme-toggle__icon');
+      var label = btn.querySelector('.codex-theme-toggle__label');
+      if (icon) icon.textContent = next === 'light' ? '☀️' : '🌙';
+      if (label) label.textContent = next === 'light' ? 'Claro' : 'Escuro';
+      btn.setAttribute('aria-pressed', next === 'light' ? 'true' : 'false');
+      btn.setAttribute('title', next === 'light' ? 'Usar tema escuro' : 'Usar tema claro');
+    }
+  }
+
+  function preferredTheme() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) || 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch (e) {}
+  }
+
+  function integrateButton(btn) {
+    var target = document.querySelector('.header-actions, .topbar-actions, .navbar-actions, .nav-actions, header .actions, nav .actions, .app-header, .topbar, .navbar, header, nav');
+    if (target && !target.contains(btn)) {
+      target.appendChild(btn);
+      btn.classList.add('is-integrated');
+    }
+  }
+
+  function initThemeToggle() {
+    var btn = document.getElementById('codex-theme-toggle');
+    if (!btn) return;
+    applyTheme(preferredTheme());
+    integrateButton(btn);
+    btn.addEventListener('click', function() {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = current === 'light' ? 'dark' : 'light';
+      saveTheme(next);
+      applyTheme(next);
+      integrateButton(btn);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initThemeToggle);
+  } else {
+    initThemeToggle();
+  }
+})();
+</script>
+
+<script>
+/* codex-school-community-ux-script: pequenos ajustes de contexto escolar */
+(function() {
+  if (window.__codexSchoolCommunityUx) return;
+  window.__codexSchoolCommunityUx = true;
+
+  function ready(fn) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+    else fn();
+  }
+
+  ready(function() {
+    document.documentElement.setAttribute('data-community-context', 'school');
+
+    document.querySelectorAll('form').forEach(function(form) {
+      if (!form.getAttribute('aria-label') && !form.getAttribute('aria-labelledby')) {
+        form.setAttribute('aria-label', 'Formulario da comunidade escolar');
+      }
+    });
+
+    document.querySelectorAll('input, select, textarea').forEach(function(field) {
+      if (!field.id && field.name) field.id = 'field-' + String(field.name).replace(/[^a-zA-Z0-9_-]/g, '-');
+      if (field.required && !field.getAttribute('aria-required')) field.setAttribute('aria-required', 'true');
+      if (!field.getAttribute('autocomplete')) {
+        var type = (field.getAttribute('type') || '').toLowerCase();
+        var name = (field.getAttribute('name') || field.id || '').toLowerCase();
+        if (type === 'email' || name.indexOf('email') >= 0) field.setAttribute('autocomplete', 'email');
+        else if (name.indexOf('nome') >= 0 || name.indexOf('name') >= 0) field.setAttribute('autocomplete', 'name');
+        else if (name.indexOf('senha') >= 0 || name.indexOf('password') >= 0) field.setAttribute('autocomplete', 'current-password');
+      }
+    });
+
+    document.querySelectorAll('button:not([type])').forEach(function(button) {
+      button.setAttribute('type', 'button');
+    });
+  });
+})();
+</script>
+
+<script>
+/* codex-project-behavior-standardization: microcomportamentos compartilhados */
+(function() {
+  if (window.__codexProjectBehaviorStandardization) return;
+  window.__codexProjectBehaviorStandardization = true;
+
+  var SUBMIT_LOCK_MS = 2500;
+  var invalidFocusPending = false;
+
+  function isElement(value) {
+    return value && value.nodeType === 1;
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function unlockForm(form, button) {
+    if (isElement(form)) {
+      delete form.dataset.codexSubmitting;
+      if (form.getAttribute('aria-busy') === 'true') form.setAttribute('aria-busy', 'false');
+    }
+
+    if (isElement(button) && button.dataset.codexSubmitLocked === 'true') {
+      delete button.dataset.codexSubmitLocked;
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+    }
+  }
+
+  function restoreSubmitLocks(scope) {
+    var root = scope && scope.querySelectorAll ? scope : document;
+
+    root.querySelectorAll('form[data-codex-submitting="true"]').forEach(function(form) {
+      unlockForm(form);
+    });
+
+    root.querySelectorAll('[data-codex-submit-locked="true"]').forEach(function(button) {
+      unlockForm(null, button);
+    });
+  }
+
+  document.addEventListener('submit', function(event) {
+    var form = event.target;
+    if (!isElement(form) || String(form.tagName).toLowerCase() !== 'form') return;
+    if (form.hasAttribute('data-no-submit-lock')) return;
+
+    if (form.dataset.codexSubmitting === 'true') {
+      event.preventDefault();
+      return;
+    }
+
+    if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
+
+    form.dataset.codexSubmitting = 'true';
+    form.setAttribute('aria-busy', 'true');
+
+    var button = event.submitter || form.querySelector('button[type="submit"], input[type="submit"], button:not([type])');
+    if (isElement(button) && !button.disabled && !button.hasAttribute('data-no-submit-lock')) {
+      button.dataset.codexSubmitLocked = 'true';
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+    }
+
+    window.setTimeout(function() {
+      unlockForm(form, button);
+    }, SUBMIT_LOCK_MS);
+  }, true);
+
+  document.addEventListener('invalid', function(event) {
+    var field = event.target;
+    if (!isElement(field) || invalidFocusPending) return;
+    invalidFocusPending = true;
+
+    window.setTimeout(function() {
+      invalidFocusPending = false;
+      if (!document.documentElement.contains(field)) return;
+      try {
+        field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        field.focus({ preventScroll: true });
+      } catch (error) {
+        field.focus();
+      }
+    }, 0);
+  }, true);
+
+  document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Escape') return;
+    var closedSomething = false;
+
+    var dialogs = Array.prototype.slice.call(document.querySelectorAll('dialog[open]'));
+    var dialog = dialogs[dialogs.length - 1];
+    if (dialog && typeof dialog.close === 'function') {
+      dialog.close();
+      closedSomething = true;
+    }
+
+    if (!closedSomething) {
+      var details = Array.prototype.slice.call(document.querySelectorAll('details[open]'));
+      var detail = details[details.length - 1];
+      if (detail) {
+        detail.removeAttribute('open');
+        closedSomething = true;
+      }
+    }
+
+    document.querySelectorAll('[aria-expanded="true"]').forEach(function(toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+      closedSomething = true;
+    });
+
+    if (closedSomething) event.preventDefault();
+  }, true);
+
+  window.addEventListener('pageshow', function() {
+    restoreSubmitLocks(document);
+  });
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') restoreSubmitLocks(document);
+  });
+})();
+</script>
+  <?!= include("ClientCall"); ?>
+  <?!= include("HealthCheck"); ?>
+<?!= include('HumanReviewPanel'); ?>
+
+<!-- CODEX_NOTEBOOK_GRAPH_GALLERY_V1 -->
+<section class="codex-notebook-graphs" data-codex-notebook-graphs aria-live="polite">
+  <style>
+    .codex-notebook-graphs {
+      margin: 32px 0 0;
+      padding: 20px;
+      border: 1px solid var(--uo-border, rgba(120,130,150,.22));
+      border-radius: var(--uo-radius-group, 10px);
+      background: var(--uo-panel, #20242b);
+      color: var(--uo-text, #e9ecf1);
+      box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    }
+    .codex-notebook-graphs__header { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .codex-notebook-graphs__title { margin:0; font-size:1.05rem; line-height:1.3; font-weight:700; color:var(--uo-text,#e9ecf1); }
+    .codex-notebook-graphs__status { margin:0; font-size:.85rem; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+    .codex-notebook-graphs__figure { margin:0; overflow:hidden; border:1px solid var(--uo-border,#343941); border-radius:var(--uo-radius-control,8px); background:var(--uo-bg,#15171c); display:flex; flex-direction:column; }
+    .codex-notebook-graphs__btn { padding:0; margin:0; border:0; background:#fff; cursor:zoom-in; line-height:0; width:100%; }
+    .codex-notebook-graphs__figure img { display:block; width:100%; height:auto; }
+    .codex-notebook-graphs__cap { padding:10px 12px; }
+    .codex-notebook-graphs__cap-title { font-size:.9rem; font-weight:600; color:var(--uo-text,#e9ecf1); }
+    .codex-notebook-graphs__cap-desc { margin-top:2px; font-size:.78rem; line-height:1.35; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__empty { padding:14px; border:1px dashed var(--uo-border,#343941); border-radius:8px; font-size:.85rem; line-height:1.5; color:var(--uo-muted,#b2b9c4); }
+    .codex-notebook-graphs__empty code { background:var(--uo-bg,#15171c); padding:1px 5px; border-radius:4px; }
+    .codex-notebook-graphs__lightbox { position:fixed; inset:0; z-index:2147483646; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,.82); }
+    .codex-notebook-graphs__lightbox.is-open { display:flex; }
+    .codex-notebook-graphs__lightbox img { max-width:96vw; max-height:90vh; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .codex-notebook-graphs__close { position:absolute; top:16px; right:20px; width:40px; height:40px; border-radius:50%; border:1px solid var(--uo-border,#343941); background:var(--uo-panel,#20242b); color:var(--uo-text,#e9ecf1); font-size:22px; line-height:1; cursor:pointer; }
+  </style>
+  <div class="codex-notebook-graphs__header">
+    <h2 class="codex-notebook-graphs__title">Gráficos da análise (notebook)</h2>
+    <p class="codex-notebook-graphs__status" data-codex-graphs-status>Carregando gráficos...</p>
+  </div>
+  <div class="codex-notebook-graphs__grid" data-codex-graphs-grid></div>
+</section>
+<script>
+(function () {
+  var section = document.currentScript && document.currentScript.previousElementSibling;
+  if (!section || !section.matches('[data-codex-notebook-graphs]')) return;
+  var status = section.querySelector('[data-codex-graphs-status]');
+  var grid = section.querySelector('[data-codex-graphs-grid]');
+
+  var META = {
+    '01_overview_abas': { t: 'Visão geral por aba', d: 'Volume de registros em cada aba da planilha.' },
+    '02_distribuicoes_numericas': { t: 'Distribuições numéricas', d: 'Dispersão das principais métricas (boxplot).' },
+    '03_top_categorias': { t: 'Top categorias', d: 'Categorias mais frequentes na aba principal.' },
+    '04_serie_temporal': { t: 'Série temporal', d: 'Evolução dos registros ao longo do tempo.' }
+  };
+  function meta(name) {
+    var key = String(name || '').toLowerCase().replace(/\.(png|jpe?g)$/, '');
+    if (META[key]) return META[key];
+    var pretty = key.replace(/^\d+[_-]?/, '').replace(/[_-]+/g, ' ').trim();
+    pretty = pretty ? pretty.charAt(0).toUpperCase() + pretty.slice(1) : 'Gráfico';
+    return { t: pretty, d: '' };
+  }
+  function setStatus(text) { if (status) status.textContent = text; }
+
+  var lightbox, lightImg;
+  function close() { if (lightbox) lightbox.classList.remove('is-open'); }
+  function openLightbox(src, alt) {
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.className = 'codex-notebook-graphs__lightbox';
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'codex-notebook-graphs__close';
+      btn.setAttribute('aria-label', 'Fechar'); btn.textContent = '\u00d7';
+      lightImg = document.createElement('img');
+      lightbox.appendChild(btn); lightbox.appendChild(lightImg);
+      document.body.appendChild(lightbox);
+      lightbox.addEventListener('click', function (e) { if (e.target === lightbox || e.target === btn) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    }
+    lightImg.src = src; lightImg.alt = alt || '';
+    lightbox.classList.add('is-open');
+  }
+
+  function render(response) {
+    var images = response && response.images ? response.images : [];
+    grid.innerHTML = '';
+    if (!images.length) {
+      grid.innerHTML = '<div class="codex-notebook-graphs__empty">' +
+        (response && response.message ? (response.message + ' ') : '') +
+        'Ainda não há gráficos. Rode <code>populateSyntheticData()</code> e depois o ' +
+        '<code>notebook.py</code> no Colab (com <code>SPREADSHEETS_ID</code> e <code>FOLDER_ID</code>).</div>';
+      setStatus('Nenhum gráfico ainda.');
+      return;
+    }
+    images.forEach(function (image) {
+      var info = meta(image.name);
+      var figure = document.createElement('figure');
+      figure.className = 'codex-notebook-graphs__figure';
+      var btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'codex-notebook-graphs__btn'; btn.title = 'Ampliar';
+      var img = document.createElement('img');
+      img.loading = 'lazy'; img.decoding = 'async'; img.src = image.dataUrl; img.alt = info.t;
+      btn.appendChild(img);
+      btn.addEventListener('click', function () { openLightbox(image.dataUrl, info.t); });
+      var cap = document.createElement('figcaption');
+      cap.className = 'codex-notebook-graphs__cap';
+      var ct = document.createElement('div');
+      ct.className = 'codex-notebook-graphs__cap-title'; ct.textContent = info.t;
+      cap.appendChild(ct);
+      if (info.d) {
+        var cd = document.createElement('div');
+        cd.className = 'codex-notebook-graphs__cap-desc'; cd.textContent = info.d;
+        cap.appendChild(cd);
+      }
+      figure.appendChild(btn); figure.appendChild(cap);
+      grid.appendChild(figure);
+    });
+    setStatus(images.length + ' gráfico(s).');
+  }
+
+  if (!window.google || !google.script || !google.script.run) {
+    setStatus('Disponível apenas no Web App publicado.');
+    grid.innerHTML = '<div class="codex-notebook-graphs__empty">Os gráficos aparecem quando esta tela roda dentro do Web App publicado.</div>';
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(render)
+    .withFailureHandler(function (error) {
+      setStatus(error && error.message ? error.message : 'Não foi possível carregar os gráficos.');
+    })
+    .getNotebookGraphImages({});
+}());
+</script>
+<!-- /CODEX_NOTEBOOK_GRAPH_GALLERY_V1 -->
+<script>
+/* codex-apicall-v1 — não remover este marcador */
+(function() {
+  'use strict';
+  /* Lê ?page=app#tok= da URL e armazena em módulo para todas as chamadas */
+  var __tok__ = '';
+  try {
+    __tok__ = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('tok') || new URLSearchParams(window.location.search).get('tok') || '';
+  } catch(e) {}
+  window.__CODEX_TOK__ = __tok__;
+
+  /* Funções que recebem tok como 1º argumento */
+  var TOK_FIRST = ['getInitialAppData', 'pingSession', 'getUserData',
+                   'getInitialData', 'getDashboardData', 'loadAppData'];
+
+  /**
+   * apiCall(fnName, ...args) — wrapper promisificado para google.script.run.
+   * Injeta o token automaticamente em funções da lista TOK_FIRST.
+   */
+  function apiCall(fnName) {
+    var extra = Array.prototype.slice.call(arguments, 1);
+    var args  = TOK_FIRST.indexOf(fnName) >= 0
+      ? [window.__CODEX_TOK__].concat(extra)
+      : extra;
+    return new Promise(function(resolve, reject) {
+      if (!window.google || !google.script || !google.script.run) {
+        reject(new Error('google.script.run não disponível.')); return;
+      }
+      var runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(e) {
+          reject(new Error(e && e.message ? e.message : String(e)));
+        });
+      if (typeof runner[fnName] !== 'function') {
+        reject(new Error('Função backend não encontrada: ' + fnName)); return;
+      }
+      runner[fnName].apply(runner, args);
+    });
+  }
+
+  window.apiCall = apiCall;
+
+  /* Auto-bootstrap: chama getInitialAppData e dispara evento com o usuário */
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof google === 'undefined' || !google.script) return;
+    apiCall('getInitialAppData').then(function(res) {
+      if (res && res.success && res.currentUser) {
+        window.__CODEX_USER__ = res.currentUser;
+        document.dispatchEvent(new CustomEvent('codex:userLoaded', { detail: res.currentUser }));
+      }
+    }).catch(function() { /* silencioso — getInitialAppData pode não existir ainda */ });
+  });
+})();
+</script>
+
+
+
+<script>
+/* codex-apicall-v1 — não remover este marcador */
+(function() {
+  'use strict';
+  /* Lê ?page=app#tok= da URL e armazena em módulo para todas as chamadas */
+  var __tok__ = '';
+  try {
+    __tok__ = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('tok') || new URLSearchParams(window.location.search).get('tok') || '';
+  } catch(e) {}
+  window.__CODEX_TOK__ = __tok__;
+
+  /* Funções que recebem tok como 1º argumento */
+  var TOK_FIRST = ['getInitialAppData', 'pingSession', 'getUserData',
+                   'getInitialData', 'getDashboardData', 'loadAppData'];
+
+  /**
+   * apiCall(fnName, ...args) — wrapper promisificado para google.script.run.
+   * Injeta o token automaticamente em funções da lista TOK_FIRST.
+   */
+  function apiCall(fnName) {
+    var extra = Array.prototype.slice.call(arguments, 1);
+    var args  = TOK_FIRST.indexOf(fnName) >= 0
+      ? [window.__CODEX_TOK__].concat(extra)
+      : extra;
+    return new Promise(function(resolve, reject) {
+      if (!window.google || !google.script || !google.script.run) {
+        reject(new Error('google.script.run não disponível.')); return;
+      }
+      var runner = google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(e) {
+          reject(new Error(e && e.message ? e.message : String(e)));
+        });
+      if (typeof runner[fnName] !== 'function') {
+        reject(new Error('Função backend não encontrada: ' + fnName)); return;
+      }
+      runner[fnName].apply(runner, args);
+    });
+  }
+
+  window.apiCall = apiCall;
+
+  /* Auto-bootstrap: chama getInitialAppData e dispara evento com o usuário */
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof google === 'undefined' || !google.script) return;
+    apiCall('getInitialAppData').then(function(res) {
+      if (res && res.success && res.currentUser) {
+        window.__CODEX_USER__ = res.currentUser;
+        document.dispatchEvent(new CustomEvent('codex:userLoaded', { detail: res.currentUser }));
+      }
+    }).catch(function() { /* silencioso — getInitialAppData pode não existir ainda */ });
+  });
+})();
+</script>
+
+<!-- fleet-method-guide:start -->
+<style>
+  .fleet-method-guide { box-sizing: border-box; flex: 0 0 auto; grid-column: 1 / -1; width: calc(100% - 2rem); max-width: 64rem; margin: 1rem auto; border: 1px solid currentColor; border-radius: .65rem; color: inherit; background: inherit; font: inherit; }
+  .fleet-method-guide > summary { cursor: pointer; padding: .75rem 1rem; min-height: 44px; box-sizing: border-box; font-weight: 600; overflow-wrap: anywhere; }
+  .fleet-method-guide > summary:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+  .fleet-method-guide .fleet-method-content { padding: 0 1rem 1rem; max-height: 50vh; overflow-y: auto; overscroll-behavior: contain; }
+  .fleet-method-guide p { margin: .5rem 0; line-height: 1.5; overflow-wrap: anywhere; }
+  .fleet-method-guide dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; margin: .75rem 0 1rem; }
+  .fleet-method-guide dt { font-weight: 600; margin-top: .5rem; }
+  .fleet-method-guide dd { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
+  @media print { .fleet-method-guide { display: none; } }
+</style>
+<details class="fleet-method-guide" data-project="weekinloop_biometria">
+  <summary>Como conduzir esta atividade</summary>
+  <div class="fleet-method-content">
+    <p>WeekInLoop — Biometria nos Anos Iniciais</p>
+    <section aria-label="Para quem participa">
+      <p><strong>Para quem participa</strong></p>
+      <dl>
+        <dt>Propósito</dt><dd>Participar de uma atividade observada sabendo quando e por que dados são usados.</dd>
+        <dt>Ação</dt><dd>Realizar a tarefa, sinalizar desconforto e pedir pausa quando necessário.</dd>
+        <dt>Fechamento</dt><dd>Encerrar a participação e confirmar que a coleta terminou.</dd>
+      </dl>
+    </section>
+    <section aria-label="Para quem conduz a turma">
+      <p><strong>Para quem conduz a turma</strong></p>
+      <dl>
+        <dt>Propósito</dt><dd>Conduzir observação de estado momentâneo sem diagnóstico.</dd>
+        <dt>Ação</dt><dd>Conferir consentimentos, acompanhar a sessão e revisar qualquer rascunho de IA.</dd>
+        <dt>Fechamento</dt><dd>Aprovar a devolutiva pedagógica e descartar dados brutos conforme a política.</dd>
+      </dl>
+    </section>
+  </div>
+</details>
+<!-- fleet-method-guide:end -->
+</body>
+</html>
+
+
+
+
+
+
+

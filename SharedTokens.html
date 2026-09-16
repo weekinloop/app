@@ -1,0 +1,348 @@
+<style id="codex-shared-tokens">
+:root{color-scheme:dark;--bg:#15171c;--surface:#20242b;--surface-soft:#1a1d23;--surface-raised:#272b33;--border:#343941;--text:#e9ecf1;--muted:#b2b9c4;--accent:#8ab4f8;--accent-strong:#aecbfa;--success:#16a34a;--danger:#dc2626;--focus-color:#ffd166;--focus-width:3px;--focus-offset:3px;--radius-control:8px;--radius-card:12px;--disabled-opacity:.55;--uo-bg:var(--bg);--uo-panel:var(--surface);--uo-text:var(--text);--uo-muted:var(--muted);--uo-border:var(--border);--uo-accent:var(--accent);--uo-radius-group:var(--radius-card);--uo-radius-control:var(--radius-control);--raio:var(--radius-card);--raio-controle:var(--radius-control)}
+:where(html,body){-webkit-text-size-adjust:100%;text-size-adjust:100%}:where(body){min-width:320px;overflow-x:hidden}:where(*,*::before,*::after){box-sizing:border-box}:where(body,input,select,textarea,button){font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}:where(input,select,textarea){max-width:100%;font-size:max(16px,1em)}
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:var(--focus-width) solid var(--focus-color)!important;outline-offset:var(--focus-offset)!important}:where(button,.btn,.button,[role="button"],input[type="button"],input[type="submit"],input[type="reset"]){min-height:44px;min-width:44px;border-radius:var(--radius-control);touch-action:manipulation;cursor:pointer}:where(button:disabled,.btn:disabled,.button:disabled,[aria-disabled="true"]){opacity:var(--disabled-opacity);cursor:not-allowed!important}:where(.card,.cartao,.panel,.box,.widget,.section,.surface,.modal-content,.dialog-content){border-radius:var(--radius-card)}
+:where(.empty-state,.empty,.no-data,.no-results,.loading-state){display:grid;gap:10px;place-items:center;min-height:140px;color:var(--muted);text-align:center}.uo-spinner{width:34px;height:34px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%}@media (prefers-reduced-motion:no-preference){.uo-spinner{animation:codexSharedSpin .8s linear infinite}}@keyframes codexSharedSpin{to{transform:rotate(360deg)}}
+.uo-health-badge{position:fixed;bottom:10px;left:10px;z-index:2147483000;padding:4px 10px;border-radius:999px;background:#6b7280;color:#fff;font:12px/1.4 system-ui,"Segoe UI",Roboto,sans-serif;opacity:.85;pointer-events:none;user-select:none;box-shadow:0 1px 3px rgba(0,0,0,.25)}.uo-health-badge--ok{background:var(--success)}.uo-health-badge--down{background:var(--danger)}.uo-health-badge--warn{background:#b45309}
+@media (max-width:480px){:where(body){font-size:16px}:where(.grid,.cards,.dashboard-grid,.stats-grid,.form-grid,.filters-grid){grid-template-columns:1fr!important}:where(.toolbar,.actions,.button-row,.filters,.form-actions,.modal-actions,.header-actions){flex-direction:column;align-items:stretch}:where(.form-actions>button,.form-actions>.btn,.actions>button,.actions>.btn){width:100%}:where(table){display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style>
+<script id="codex-community-behavior">
+(function () {
+  'use strict';
+  if (window.__codexCommunityBehavior) return;
+  window.__codexCommunityBehavior = true;
+  window.__codexProjectBehaviorStandardization = true;
+
+  var SUBMIT_LOCK_MS = 2500;
+  var invalidFocusPending = false;
+  var toastTimer = null;
+
+  function ready(fn) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
+    else fn();
+  }
+
+  function isElement(value) {
+    return value && value.nodeType === 1;
+  }
+
+  function queryAll(scope, selector) {
+    try { return Array.prototype.slice.call((scope || document).querySelectorAll(selector)); }
+    catch (error) { return []; }
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function normalizeControls(scope) {
+    var root = scope && scope.querySelectorAll ? scope : document;
+
+    queryAll(root, 'button:not([type])').forEach(function (button) {
+      if (button.closest && button.closest('form')) {
+        var text = String(button.textContent || button.getAttribute('aria-label') || '').toLowerCase();
+        var looksSubmit = /(entrar|salvar|enviar|concluir|registrar|cadastrar|confirmar|acessar|login|submit)/.test(text);
+        button.setAttribute('type', looksSubmit ? 'submit' : 'button');
+      } else {
+        button.setAttribute('type', 'button');
+      }
+    });
+
+    queryAll(root, 'input, select, textarea').forEach(function (field) {
+      var name = String(field.getAttribute('name') || field.id || '').toLowerCase();
+      var type = String(field.getAttribute('type') || '').toLowerCase();
+      if (!field.id && field.getAttribute('name')) {
+        field.id = 'field-' + String(field.getAttribute('name')).replace(/[^a-zA-Z0-9_-]/g, '-');
+      }
+      if (field.required && !field.getAttribute('aria-required')) field.setAttribute('aria-required', 'true');
+      if (!field.getAttribute('autocomplete')) {
+        if (type === 'email' || name.indexOf('email') >= 0) field.setAttribute('autocomplete', 'email');
+        else if (name.indexOf('nome') >= 0 || name.indexOf('name') >= 0) field.setAttribute('autocomplete', 'name');
+        else if (name.indexOf('senha') >= 0 || name.indexOf('password') >= 0) field.setAttribute('autocomplete', 'current-password');
+        else if (name.indexOf('telefone') >= 0 || name.indexOf('phone') >= 0) field.setAttribute('autocomplete', 'tel');
+      }
+    });
+
+    queryAll(root, 'a[target="_blank"]').forEach(function (link) {
+      var rel = String(link.getAttribute('rel') || '');
+      if (rel.indexOf('noopener') < 0) link.setAttribute('rel', (rel + ' noopener').trim());
+    });
+  }
+
+  function unlockForm(form, button) {
+    if (isElement(form)) {
+      delete form.dataset.codexSubmitting;
+      if (form.getAttribute('aria-busy') === 'true') form.setAttribute('aria-busy', 'false');
+    }
+    if (isElement(button) && button.dataset.codexSubmitLocked === 'true') {
+      delete button.dataset.codexSubmitLocked;
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+    }
+  }
+
+  function restoreSubmitLocks(scope) {
+    var root = scope && scope.querySelectorAll ? scope : document;
+    queryAll(root, 'form[data-codex-submitting="true"]').forEach(function (form) { unlockForm(form); });
+    queryAll(root, '[data-codex-submit-locked="true"]').forEach(function (button) { unlockForm(null, button); });
+  }
+
+  function notify(kind, message) {
+    var box = document.getElementById('codex-community-status');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'codex-community-status';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { box.classList.remove('is-visible'); }, 1400);
+  }
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!isElement(form) || String(form.tagName).toLowerCase() !== 'form') return;
+    if (form.hasAttribute('data-no-submit-lock')) return;
+    if (form.dataset.codexSubmitting === 'true') {
+      event.preventDefault();
+      return;
+    }
+    if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
+    form.dataset.codexSubmitting = 'true';
+    form.setAttribute('aria-busy', 'true');
+
+    var button = event.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+    if (isElement(button) && !button.disabled && !button.hasAttribute('data-no-submit-lock')) {
+      button.dataset.codexSubmitLocked = 'true';
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+    }
+    window.setTimeout(function () { unlockForm(form, button); }, SUBMIT_LOCK_MS);
+  }, true);
+
+  document.addEventListener('invalid', function (event) {
+    var field = event.target;
+    if (!isElement(field) || invalidFocusPending) return;
+    invalidFocusPending = true;
+    window.setTimeout(function () {
+      invalidFocusPending = false;
+      if (!document.documentElement.contains(field)) return;
+      try {
+        field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        field.focus({ preventScroll: true });
+      } catch (error) { field.focus(); }
+    }, 0);
+  }, true);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    var closedSomething = false;
+    var dialogs = queryAll(document, 'dialog[open]');
+    var dialog = dialogs[dialogs.length - 1];
+    if (dialog && typeof dialog.close === 'function') {
+      dialog.close();
+      closedSomething = true;
+    }
+    if (!closedSomething) {
+      var details = queryAll(document, 'details[open]');
+      var detail = details[details.length - 1];
+      if (detail) {
+        detail.removeAttribute('open');
+        closedSomething = true;
+      }
+    }
+    queryAll(document, '[aria-expanded="true"]').forEach(function (toggle) {
+      toggle.setAttribute('aria-expanded', 'false');
+      closedSomething = true;
+    });
+    if (closedSomething) event.preventDefault();
+  }, true);
+
+  ready(function () {
+    document.documentElement.setAttribute('data-community-context', 'school');
+    normalizeControls(document);
+    window.CodexCommunity = window.CodexCommunity || {};
+    window.CodexCommunity.notify = window.CodexCommunity.notify || notify;
+  });
+
+  window.addEventListener('pageshow', function () { restoreSubmitLocks(document); normalizeControls(document); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') restoreSubmitLocks(document);
+  });
+}());
+</script>
+<style id="codex-action-semantics">
+:where(.actions,.form-actions,.button-row,.modal-actions,.dialog-actions,.footer-actions,.toolbar-actions) > :where(.codex-action-secondary){order:1}
+:where(.actions,.form-actions,.button-row,.modal-actions,.dialog-actions,.footer-actions,.toolbar-actions) > :where(.codex-action-primary){order:2}
+:where(.actions,.form-actions,.button-row,.modal-actions,.dialog-actions,.footer-actions,.toolbar-actions) > :where(.codex-action-danger){order:3}
+:where(.codex-action-danger){border-color:rgba(220,38,38,.45)!important;color:#fecaca!important}
+</style>
+<script id="codex-action-semantics-script">
+(function(){
+  'use strict';
+  if (window.__codexActionSemantics) return;
+  window.__codexActionSemantics = true;
+
+  var LABELS = {
+    'ok': 'Entendi',
+    'deletar': 'Excluir',
+    'apagar': 'Excluir',
+    'submeter': 'Enviar'
+  };
+
+  function ready(fn){
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, {once:true});
+    else fn();
+  }
+
+  function queryAll(scope, selector){
+    try { return Array.prototype.slice.call((scope || document).querySelectorAll(selector)); }
+    catch(error){ return []; }
+  }
+
+  function cleanText(value){
+    return String(value || '').replace(/[\u2190-\u21ff\u2600-\u27bf]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  function normalizeActionLabels(scope){
+    queryAll(scope, 'button, a[role="button"], .btn, .button').forEach(function(el){
+      if (el.hasAttribute('data-no-action-standard')) return;
+      var current = cleanText(el.textContent).toLowerCase();
+      if (LABELS[current]) el.textContent = LABELS[current];
+    });
+  }
+
+  function classifyAction(el){
+    var text = cleanText(el.textContent || el.getAttribute('aria-label')).toLowerCase();
+    if (!text) return '';
+    if (/(excluir|remover|limpar|resetar|zerar|cancelar.*cadastro)/.test(text)) return 'danger';
+    if (/(salvar|enviar|confirmar|concluir|entrar|acessar|cadastrar|registrar|aplicar|continuar)/.test(text)) return 'primary';
+    if (/(cancelar|voltar|fechar|entendi|sair)/.test(text)) return 'secondary';
+    return '';
+  }
+
+  function normalizeActionOrder(scope){
+    queryAll(scope, '.actions, .form-actions, .button-row, .modal-actions, .dialog-actions, .footer-actions, .toolbar-actions').forEach(function(group){
+      queryAll(group, 'button, a[role="button"], .btn, .button').forEach(function(el){
+        if (el.hasAttribute('data-no-action-standard')) return;
+        var kind = classifyAction(el);
+        if (!kind) return;
+        el.classList.add('codex-action-' + kind);
+      });
+    });
+  }
+
+  function normalize(scope){
+    var root = scope && scope.querySelectorAll ? scope : document;
+    normalizeActionLabels(root);
+    normalizeActionOrder(root);
+  }
+
+  ready(function(){ normalize(document); });
+  window.addEventListener('pageshow', function(){ normalize(document); });
+  window.CodexCommunity = window.CodexCommunity || {};
+  window.CodexCommunity.normalizeActions = normalize;
+}());
+</script>
+<script id="codex-content-semantics">
+(function(){
+  'use strict';
+  if (window.__codexContentSemantics) return;
+  window.__codexContentSemantics = true;
+
+  var MESSAGE_MAP = {
+    'ok': 'Entendi',
+    'sucesso': 'Operacao concluida.',
+    'salvo com sucesso': 'Operacao concluida.',
+    'salvo com sucesso.': 'Operacao concluida.',
+    'operacao realizada com sucesso': 'Operacao concluida.',
+    'operacao realizada com sucesso.': 'Operacao concluida.',
+    'erro': 'Nao foi possivel concluir. Tente novamente.',
+    'erro.': 'Nao foi possivel concluir. Tente novamente.',
+    'falha': 'Nao foi possivel concluir. Tente novamente.',
+    'falha.': 'Nao foi possivel concluir. Tente novamente.',
+    'credenciais invalidas.': 'Nao foi possivel entrar. Verifique os dados.',
+    'credenciais invalidas': 'Nao foi possivel entrar. Verifique os dados.',
+    'carregando': 'Carregando...',
+    'carregando...': 'Carregando...'
+  };
+
+  function ready(fn){
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, {once:true});
+    else fn();
+  }
+
+  function queryAll(scope, selector){
+    try { return Array.prototype.slice.call((scope || document).querySelectorAll(selector)); }
+    catch(error){ return []; }
+  }
+
+  function clean(value){
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function key(value){
+    return clean(value).toLowerCase();
+  }
+
+  function normalizeMessages(scope){
+    var selector = '[role="status"], [role="alert"], .message, .msg, .status-msg, .toast, .snackbar, .alert, .notice, .error, .success';
+    queryAll(scope, selector).forEach(function(el){
+      if (el.hasAttribute('data-no-message-standard')) return;
+      if (el.children && el.children.length > 0) return;
+      var mapped = MESSAGE_MAP[key(el.textContent)];
+      if (mapped) el.textContent = mapped;
+    });
+  }
+
+  function normalizeTitleText(text){
+    return clean(text).replace(/\s+[:|-]\s+/g, ' - ');
+  }
+
+  function normalizeHeadings(scope){
+    queryAll(scope, 'h1, h2, h3, .page-title, .section-title, .view-title').forEach(function(el){
+      if (el.hasAttribute('data-no-title-standard')) return;
+      if (el.children && el.children.length > 0) return;
+      var next = normalizeTitleText(el.textContent);
+      if (next && next !== el.textContent) el.textContent = next;
+    });
+  }
+
+  function syncDocumentTitle(){
+    if (document.documentElement.hasAttribute('data-no-title-standard')) return;
+    var titleSource = document.querySelector('h1, .page-title, .view-title');
+    var pageTitle = titleSource ? normalizeTitleText(titleSource.textContent) : '';
+    if (!pageTitle) return;
+    var suffix = 'Escola Classe 115 Norte';
+    var current = clean(document.title);
+    if (!current || current === suffix || current.indexOf(pageTitle) < 0) {
+      document.title = pageTitle + ' | ' + suffix;
+    }
+  }
+
+  function normalize(scope){
+    var root = scope && scope.querySelectorAll ? scope : document;
+    normalizeMessages(root);
+    normalizeHeadings(root);
+    syncDocumentTitle();
+  }
+
+  ready(function(){
+    normalize(document);
+    window.CodexCommunity = window.CodexCommunity || {};
+    window.CodexCommunity.normalizeContent = normalize;
+    window.CodexCommunity.messages = window.CodexCommunity.messages || {
+      success: 'Operacao concluida.',
+      error: 'Nao foi possivel concluir. Tente novamente.',
+      loading: 'Carregando...'
+    };
+  });
+  window.addEventListener('pageshow', function(){ normalize(document); });
+}());
+</script>

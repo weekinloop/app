@@ -1,0 +1,339 @@
+<style id="up-oracular-design-system">
+:focus-visible {
+  outline: 3px solid var(--accent, #8ab4f8);
+  outline-offset: 2px;
+}
+:root {
+  color-scheme: dark;
+  --uo-bg: #15171c;
+  --uo-panel: #20242b;
+  --uo-text: #e9ecf1;
+  --uo-muted: #b2b9c4;
+  --uo-border: #343941;
+  --uo-accent: #7aa2d6;
+  --uo-radius-group: 10px;
+  --uo-radius-control: 8px;
+}
+
+html, body {
+  background: var(--uo-bg) !important;
+  color: var(--uo-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body, input, select, textarea, button {
+  color: var(--uo-text);
+}
+
+.card, .panel, .modal, .dialog, dialog, .container,
+.box, .widget, .section, .sidebar, .drawer, .popover,
+[role="dialog"], [class*="card"], [class*="panel"] {
+  background-color: var(--uo-panel) !important;
+  border-color: var(--uo-border) !important;
+  border-radius: var(--uo-radius-group) !important;
+}
+
+button, input, select, textarea, .btn, .button,
+[role="button"], [role="menuitem"], .dropdown-item,
+.menu-item, [class*="button"], [class*="dropdown-item"] {
+  border-radius: var(--uo-radius-control) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, select, textarea {
+  background-color: var(--uo-panel) !important;
+  border: 1px solid var(--uo-border) !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+
+label, .form-label, [class*="form-label"] {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--uo-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.uo-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.uo-feedback-box {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--uo-border);
+  border-radius: var(--uo-radius-group);
+  background: var(--uo-panel);
+  color: var(--uo-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.uo-feedback-box.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uo-feedback-box[data-kind="ok"] {
+  border-color: #8fc2a6;
+  color: #8fc2a6;
+}
+
+.uo-feedback-box[data-kind="err"] {
+  border-color: #d98b93;
+  color: #d98b93;
+}
+
+form[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+form[aria-busy="true"] :is(button, input[type="submit"], input[type="button"]) {
+  pointer-events: none;
+}
+
+button, .btn-primary, .button-primary,
+[class*="primary"][role="button"] {
+  background-color: var(--uo-accent) !important;
+}
+
+p, small, .muted, .secondary, .subtitle,
+[class*="muted"], [class*="secondary"] {
+  color: var(--uo-muted) !important;
+}
+
+hr, table, th, td, fieldset {
+  border-color: var(--uo-border) !important;
+}
+
+a {
+  color: var(--uo-accent);
+}
+
+/* Geometrias funcionais permanecem circulares. */
+.avatar, .spinner, .loading-ring, .dot, .status-dot,
+[class*="avatar"], [class*="spinner"], [class*="loading-ring"] {
+  border-radius: 50% !important;
+}
+</style>
+<script id="up-oracular-form-feedback">
+(function () {
+  'use strict';
+  if (window.UpOracularFeedback) return;
+
+  var timer = null;
+  function notify(kind, message) {
+    var box = document.getElementById('uo-feedback-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'uo-feedback-box';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      box.classList.remove('is-visible');
+    }, 1000);
+  }
+
+  function connectLabels(form) {
+    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (field, index) {
+      var id = field.id || ('uo-field-' + index + '-' + Math.random().toString(36).slice(2, 7));
+      field.id = id;
+      var label = form.querySelector('label[for="' + id + '"]');
+      if (!label) {
+        var sibling = field.previousElementSibling;
+        if (sibling && sibling.tagName === 'LABEL') {
+          sibling.htmlFor = id;
+          label = sibling;
+        }
+      }
+      if (label && field.parentElement && !field.parentElement.classList.contains('uo-field')) {
+        field.parentElement.classList.add('uo-field');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(connectLabels);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    form.setAttribute('aria-busy', 'true');
+    notify('ok', 'Enviando...');
+    window.setTimeout(function () {
+      if (form.getAttribute('aria-busy') === 'true') {
+        form.removeAttribute('aria-busy');
+      }
+    }, 10000);
+  }, true);
+
+  window.UpOracularFeedback = {
+    ok: function (message) { notify('ok', message); },
+    err: function (message) { notify('err', message); },
+    done: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('ok', message);
+    },
+    fail: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('err', message);
+    }
+  };
+}());
+</script>
+
+<!-- codex-school-reality-analytics-panel codex-project-behavior-standardization -->
+<section class="school-reality-analytics" aria-labelledby="schoolRealityAnalyticsTitle">
+  <style>
+    .school-reality-analytics {
+      display: block;
+      margin: 1rem 0;
+      padding: 1rem;
+      border: 1px solid rgba(31, 41, 55, .14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .92);
+      color: #1f2937;
+    }
+    .school-reality-analytics__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .75rem;
+      margin-bottom: .85rem;
+    }
+    .school-reality-analytics h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.25;
+    }
+    .school-reality-analytics p {
+      margin: .2rem 0 0;
+      color: #5b6472;
+      line-height: 1.45;
+    }
+    .school-reality-analytics__refresh {
+      min-height: 2.25rem;
+      border: 1px solid rgba(31, 41, 55, .16);
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1f2937;
+      padding: .45rem .7rem;
+      cursor: pointer;
+    }
+    .school-reality-analytics__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .75rem;
+    }
+    .school-reality-analytics__card {
+      border: 1px solid rgba(31, 41, 55, .12);
+      border-radius: 8px;
+      padding: .85rem;
+      background: #f8fafc;
+    }
+    .school-reality-analytics__label {
+      font-size: .82rem;
+      color: #5b6472;
+    }
+    .school-reality-analytics__value {
+      margin-top: .25rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .school-reality-analytics__unit {
+      font-size: .8rem;
+      color: #5b6472;
+    }
+    .school-reality-analytics__narrative {
+      margin-top: .45rem;
+      font-size: .88rem;
+    }
+  </style>
+  <div class="school-reality-analytics__head">
+    <div>
+      <h2 id="schoolRealityAnalyticsTitle">Analises da realidade escolar</h2>
+      <p id="schoolRealityAnalyticsFocus">manifestacao comportamental e fisiologica da aprendizagem</p>
+    </div>
+    <button class="school-reality-analytics__refresh" type="button" data-school-reality-refresh>Atualizar</button>
+  </div>
+  <div class="school-reality-analytics__grid" data-school-reality-cards>
+    <article class="school-reality-analytics__card">
+      <div class="school-reality-analytics__label">Cobertura de registros acompanhados</div>
+      <div class="school-reality-analytics__value">--</div>
+      <div class="school-reality-analytics__unit">registros</div>
+    </article>
+    <article class="school-reality-analytics__card">
+      <div class="school-reality-analytics__label">Media de desempenho observavel</div>
+      <div class="school-reality-analytics__value">--</div>
+      <div class="school-reality-analytics__unit">media</div>
+    </article>
+  </div>
+  <script>
+    (function() {
+      var root = document.currentScript.closest('.school-reality-analytics');
+      if (!root) return;
+      var cards = root.querySelector('[data-school-reality-cards]');
+      var refresh = root.querySelector('[data-school-reality-refresh]');
+
+      function esc(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function render(summary) {
+        var analyses = summary && summary.analyses ? summary.analyses : [];
+        cards.innerHTML = analyses.slice(0, 2).map(function(item) {
+          return '<article class="school-reality-analytics__card">' +
+            '<div class="school-reality-analytics__label">' + esc(item.label) + '</div>' +
+            '<div class="school-reality-analytics__value">' + esc(item.value) + '</div>' +
+            '<div class="school-reality-analytics__unit">' + esc(item.unit) + '</div>' +
+            '<p class="school-reality-analytics__narrative">' + esc(item.narrative) + '</p>' +
+          '</article>';
+        }).join('');
+      }
+
+      function load() {
+        if (!window.google || !google.script || !google.script.run) {
+          render({ analyses: [] });
+          return;
+        }
+        google.script.run
+          .withSuccessHandler(render)
+          .withFailureHandler(function(error) {
+            cards.innerHTML = '<article class="school-reality-analytics__card"><div class="school-reality-analytics__label">Analise indisponivel</div><p class="school-reality-analytics__narrative">' + esc(error && error.message ? error.message : error) + '</p></article>';
+          })
+          .getSchoolRealityAnalyticsSummary({ record: true });
+      }
+
+      if (refresh) refresh.addEventListener('click', load);
+      load();
+    })();
+  </script>
+</section>
+
+

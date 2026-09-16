@@ -1,0 +1,433 @@
+<style id="up-oracular-design-system">
+:focus-visible {
+  outline: 3px solid var(--accent, #8ab4f8);
+  outline-offset: 2px;
+}
+:root {
+  color-scheme: dark;
+  --uo-bg: #15171c;
+  --uo-panel: #20242b;
+  --uo-text: #e9ecf1;
+  --uo-muted: #b2b9c4;
+  --uo-border: #343941;
+  --uo-accent: #7aa2d6;
+  --uo-radius-group: 10px;
+  --uo-radius-control: 8px;
+}
+
+html, body {
+  background: var(--uo-bg) !important;
+  color: var(--uo-text) !important;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body, input, select, textarea, button {
+  color: var(--uo-text);
+}
+
+.card, .panel, .modal, .dialog, dialog, .container,
+.box, .widget, .section, .sidebar, .drawer, .popover,
+[role="dialog"], [class*="card"], [class*="panel"] {
+  background-color: var(--uo-panel) !important;
+  border-color: var(--uo-border) !important;
+  border-radius: var(--uo-radius-group) !important;
+}
+
+button, input, select, textarea, .btn, .button,
+[role="button"], [role="menuitem"], .dropdown-item,
+.menu-item, [class*="button"], [class*="dropdown-item"] {
+  border-radius: var(--uo-radius-control) !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, select, textarea {
+  background-color: var(--uo-panel) !important;
+  border: 1px solid var(--uo-border) !important;
+  padding: 8px !important;
+  box-sizing: border-box;
+}
+
+label, .form-label, [class*="form-label"] {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--uo-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.35;
+}
+
+.uo-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.uo-feedback-box {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--uo-border);
+  border-radius: var(--uo-radius-group);
+  background: var(--uo-panel);
+  color: var(--uo-text);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.uo-feedback-box.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uo-feedback-box[data-kind="ok"] {
+  border-color: #8fc2a6;
+  color: #8fc2a6;
+}
+
+.uo-feedback-box[data-kind="err"] {
+  border-color: #d98b93;
+  color: #d98b93;
+}
+
+form[aria-busy="true"] {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+form[aria-busy="true"] :is(button, input[type="submit"], input[type="button"]) {
+  pointer-events: none;
+}
+
+button, .btn-primary, .button-primary,
+[class*="primary"][role="button"] {
+  background-color: var(--uo-accent) !important;
+}
+
+p, small, .muted, .secondary, .subtitle,
+[class*="muted"], [class*="secondary"] {
+  color: var(--uo-muted) !important;
+}
+
+hr, table, th, td, fieldset {
+  border-color: var(--uo-border) !important;
+}
+
+a {
+  color: var(--uo-accent);
+}
+
+/* Geometrias funcionais permanecem circulares. */
+.avatar, .spinner, .loading-ring, .dot, .status-dot,
+[class*="avatar"], [class*="spinner"], [class*="loading-ring"] {
+  border-radius: 50% !important;
+}
+</style>
+<script id="up-oracular-form-feedback">
+(function () {
+  'use strict';
+  if (window.UpOracularFeedback) return;
+
+  var timer = null;
+  function notify(kind, message) {
+    var box = document.getElementById('uo-feedback-box');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'uo-feedback-box';
+      box.className = 'uo-feedback-box';
+      box.setAttribute('role', 'status');
+      box.setAttribute('aria-live', 'polite');
+      document.body.appendChild(box);
+    }
+    box.dataset.kind = kind === 'err' ? 'err' : 'ok';
+    box.textContent = String(message || (kind === 'err' ? 'Nao foi possivel concluir.' : 'Operacao concluida.'));
+    box.classList.add('is-visible');
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      box.classList.remove('is-visible');
+    }, 1000);
+  }
+
+  function connectLabels(form) {
+    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(function (field, index) {
+      var id = field.id || ('uo-field-' + index + '-' + Math.random().toString(36).slice(2, 7));
+      field.id = id;
+      var label = form.querySelector('label[for="' + id + '"]');
+      if (!label) {
+        var sibling = field.previousElementSibling;
+        if (sibling && sibling.tagName === 'LABEL') {
+          sibling.htmlFor = id;
+          label = sibling;
+        }
+      }
+      if (label && field.parentElement && !field.parentElement.classList.contains('uo-field')) {
+        field.parentElement.classList.add('uo-field');
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(connectLabels);
+  });
+
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (!form || form.tagName !== 'FORM') return;
+    form.setAttribute('aria-busy', 'true');
+    notify('ok', 'Enviando...');
+    window.setTimeout(function () {
+      if (form.getAttribute('aria-busy') === 'true') {
+        form.removeAttribute('aria-busy');
+      }
+    }, 10000);
+  }, true);
+
+  window.UpOracularFeedback = {
+    ok: function (message) { notify('ok', message); },
+    err: function (message) { notify('err', message); },
+    done: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('ok', message);
+    },
+    fail: function (form, message) {
+      if (form) form.removeAttribute('aria-busy');
+      notify('err', message);
+    }
+  };
+}());
+</script>
+
+<div class="maturity-tool">
+  <header class="maturity-header">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div>
+      <p class="maturity-kicker">Auto-avaliacao</p>
+      <h1>Maturidade do Backend</h1>
+      <p class="maturity-subtitle">Diagnostico operacional de configuracao, dados, seguranca, automacao e manutencao.</p>
+    </div>
+    <button class="maturity-icon-button" type="button" title="Atualizar" onclick="refreshBackendMaturity()">&#8635;</button>
+  </header>
+
+  <section class="maturity-score-panel">
+    <div class="maturity-score-ring" id="maturity-score-ring"><span id="maturity-score">--</span></div>
+    <div>
+      <p class="maturity-label">Pontuacao geral</p>
+      <h2 id="maturity-level">Carregando</h2>
+      <p id="maturity-generated" class="maturity-muted">Aguardando diagnostico.</p>
+    </div>
+  </section>
+
+  <section class="maturity-actions">
+    <button class="maturity-button maturity-primary" type="button" onclick="refreshBackendMaturity()">Executar</button>
+    <button class="maturity-button" type="button" onclick="saveBackendMaturitySnapshot()">Salvar snapshot</button>
+    <button class="maturity-button" type="button" onclick="copyBackendMaturityJson()">Copiar JSON</button>
+  </section>
+
+  <section>
+    <h2 class="maturity-section-title">Dominios</h2>
+    <div id="maturity-domains" class="maturity-domain-list"></div>
+  </section>
+
+  <section>
+    <h2 class="maturity-section-title">Proximas acoes</h2>
+    <div id="maturity-actions-list" class="maturity-next-actions"></div>
+  </section>
+
+  <section id="maturity-warnings-wrap" class="maturity-warning-panel" hidden>
+    <h2 class="maturity-section-title">Avisos</h2>
+    <div id="maturity-warnings"></div>
+  </section>
+
+  <textarea id="maturity-json" class="maturity-json" readonly></textarea>
+</div>
+
+<style>
+  .maturity-tool {
+    --maturity-bg: #f7f8fb;
+    --maturity-surface: #ffffff;
+    --maturity-text: #242833;
+    --maturity-muted: #657080;
+    --maturity-border: #dfe4ee;
+    --maturity-primary: #276749;
+    --maturity-success: #168a63;
+    --maturity-attention: #a86500;
+    --maturity-risk: #b54708;
+    --maturity-critical: #b42318;
+    color: var(--maturity-text);
+    background: var(--maturity-bg);
+    min-height: 100vh;
+    padding: 18px;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+  }
+  .maturity-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+  .maturity-header h1 { margin: 0; font-size: 24px; line-height: 1.15; letter-spacing: 0; }
+  .maturity-kicker, .maturity-label { margin: 0 0 4px; color: var(--maturity-primary); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .maturity-subtitle, .maturity-muted { color: var(--maturity-muted); margin: 6px 0 0; line-height: 1.45; }
+  .maturity-icon-button, .maturity-button { min-height: 36px; border: 1px solid var(--maturity-border); border-radius: 8px; background: var(--maturity-surface); color: var(--maturity-text); cursor: pointer; font-weight: 700; }
+  .maturity-icon-button { width: 40px; font-size: 20px; }
+  .maturity-score-panel, .maturity-domain, .maturity-action, .maturity-warning-panel { background: var(--maturity-surface); border: 1px solid var(--maturity-border); border-radius: 8px; }
+  .maturity-score-panel { display: grid; grid-template-columns: 108px 1fr; gap: 16px; align-items: center; padding: 14px; margin-bottom: 14px; }
+  .maturity-score-ring { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at center, #fff 58%, transparent 59%), conic-gradient(var(--maturity-primary) 0deg, #e8ecf7 0deg); }
+  .maturity-score-ring span { font-size: 28px; font-weight: 800; }
+  .maturity-score-panel h2 { margin: 0; font-size: 20px; line-height: 1.25; }
+  .maturity-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .maturity-button { padding: 8px 10px; font-size: 13px; }
+  .maturity-button:disabled { opacity: .55; cursor: wait; }
+  .maturity-primary { background: var(--maturity-primary); border-color: var(--maturity-primary); color: #fff; }
+  .maturity-section-title { font-size: 15px; margin: 16px 0 8px; }
+  .maturity-domain-list, .maturity-next-actions { display: grid; gap: 8px; }
+  .maturity-domain { padding: 12px; }
+  .maturity-domain-summary { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; cursor: pointer; }
+  .maturity-domain h3 { margin: 0; font-size: 15px; }
+  .maturity-domain p, .maturity-action p { margin: 4px 0 0; color: var(--maturity-muted); line-height: 1.4; }
+  .maturity-pill { min-width: 44px; text-align: center; border-radius: 999px; padding: 5px 8px; font-weight: 800; border: 1px solid currentColor; }
+  .status-bom { color: var(--maturity-success); }
+  .status-atencao { color: var(--maturity-attention); }
+  .status-risco { color: var(--maturity-risk); }
+  .status-critico { color: var(--maturity-critical); }
+  .maturity-items { display: none; border-top: 1px solid var(--maturity-border); margin-top: 10px; padding-top: 10px; gap: 8px; }
+  .maturity-domain.is-open .maturity-items { display: grid; }
+  .maturity-item { border-left: 3px solid var(--maturity-border); padding-left: 8px; display: grid; gap: 3px; }
+  .maturity-item strong { font-size: 13px; }
+  .maturity-item small { color: var(--maturity-muted); line-height: 1.35; }
+  .maturity-action { padding: 10px; }
+  .maturity-action strong { font-size: 13px; }
+  .maturity-warning-panel { padding: 10px; margin-top: 12px; }
+  .maturity-warning-panel p { color: var(--maturity-risk); margin: 4px 0; }
+  .maturity-json { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  @media (max-width: 420px) {
+    .maturity-actions, .maturity-score-panel { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  var backendMaturityReport = <?!= initialReport ?>;
+  document.addEventListener('DOMContentLoaded', function() {
+    renderBackendMaturity(backendMaturityReport);
+  });
+  function refreshBackendMaturity() {
+    setBackendMaturityButtons(true);
+    google.script.run
+      .withSuccessHandler(function(report) {
+        backendMaturityReport = report;
+        renderBackendMaturity(report);
+        setBackendMaturityButtons(false);
+      })
+      .withFailureHandler(function(error) {
+        setBackendMaturityButtons(false);
+        alert(error && error.message ? error.message : error);
+      })
+      .runBackendMaturityAssessment({ skipWrite: true });
+  }
+  function saveBackendMaturitySnapshot() {
+    setBackendMaturityButtons(true);
+    google.script.run
+      .withSuccessHandler(function() {
+        setBackendMaturityButtons(false);
+        refreshBackendMaturity();
+      })
+      .withFailureHandler(function(error) {
+        setBackendMaturityButtons(false);
+        alert(error && error.message ? error.message : error);
+      })
+      .writeBackendMaturitySnapshot(backendMaturityReport);
+  }
+  function copyBackendMaturityJson() {
+    var json = JSON.stringify(backendMaturityReport, null, 2);
+    var field = document.getElementById('maturity-json');
+    field.value = json;
+    field.select();
+    document.execCommand('copy');
+  }
+  function renderBackendMaturity(report) {
+    if (!report || !report.summary) return;
+    document.getElementById('maturity-score').textContent = report.summary.score;
+    document.getElementById('maturity-level').textContent = report.summary.level;
+    document.getElementById('maturity-generated').textContent = 'Gerado em ' + formatBackendMaturityDate(report.generatedAt);
+    document.getElementById('maturity-score-ring').style.background =
+      'radial-gradient(circle at center, #fff 58%, transparent 59%), conic-gradient(var(--maturity-primary) ' +
+      (report.summary.score * 3.6) + 'deg, #e8ecf7 0deg)';
+    renderBackendMaturityDomains(report.domains || []);
+    renderBackendMaturityNextActions(report.nextActions || []);
+    renderBackendMaturityWarnings(report.warnings || []);
+  }
+  function renderBackendMaturityDomains(domains) {
+    var container = document.getElementById('maturity-domains');
+    container.innerHTML = '';
+    domains.forEach(function(domain, index) {
+      var domainNode = document.createElement('article');
+      domainNode.className = 'maturity-domain' + (index === 0 ? ' is-open' : '');
+      var summary = document.createElement('div');
+      summary.className = 'maturity-domain-summary';
+      summary.onclick = function() { domainNode.classList.toggle('is-open'); };
+      summary.innerHTML =
+        '<div><h3>' + escapeBackendMaturityHtml(domain.name) + '</h3><p>' +
+        escapeBackendMaturityHtml(domain.description) + '</p></div>' +
+        '<span class="maturity-pill status-' + escapeBackendMaturityHtml(domain.status) + '">' + domain.score + '</span>';
+      var items = document.createElement('div');
+      items.className = 'maturity-items';
+      (domain.items || []).forEach(function(item) {
+        var itemNode = document.createElement('div');
+        itemNode.className = 'maturity-item';
+        itemNode.innerHTML =
+          '<strong>' + escapeBackendMaturityHtml(item.label) + ' - ' + item.score + '</strong>' +
+          '<small>' + escapeBackendMaturityHtml((item.evidence || []).join(' | ')) + '</small>' +
+          (item.recommendation ? '<small>' + escapeBackendMaturityHtml(item.recommendation) + '</small>' : '');
+        items.appendChild(itemNode);
+      });
+      domainNode.appendChild(summary);
+      domainNode.appendChild(items);
+      container.appendChild(domainNode);
+    });
+  }
+  function renderBackendMaturityNextActions(actions) {
+    var container = document.getElementById('maturity-actions-list');
+    container.innerHTML = '';
+    if (!actions.length) {
+      container.innerHTML = '<div class="maturity-action"><strong>Nenhuma acao critica</strong><p>Os principais criterios estao em bom estado.</p></div>';
+      return;
+    }
+    actions.forEach(function(action) {
+      var node = document.createElement('div');
+      node.className = 'maturity-action';
+      node.innerHTML =
+        '<strong>' + escapeBackendMaturityHtml(action.domain + ' - ' + action.item + ' - ' + action.score) + '</strong>' +
+        '<p>' + escapeBackendMaturityHtml(action.recommendation) + '</p>';
+      container.appendChild(node);
+    });
+  }
+  function renderBackendMaturityWarnings(warnings) {
+    var wrap = document.getElementById('maturity-warnings-wrap');
+    var container = document.getElementById('maturity-warnings');
+    container.innerHTML = '';
+    wrap.hidden = !warnings.length;
+    warnings.forEach(function(warning) {
+      var p = document.createElement('p');
+      p.textContent = warning;
+      container.appendChild(p);
+    });
+  }
+  function setBackendMaturityButtons(disabled) {
+    document.querySelectorAll('.maturity-button, .maturity-icon-button').forEach(function(button) {
+      button.disabled = disabled;
+    });
+  }
+  function formatBackendMaturityDate(value) {
+    try { return new Date(value).toLocaleString('pt-BR'); } catch (error) { return value || ''; }
+  }
+  function escapeBackendMaturityHtml(value) {
+    return String(value === undefined || value === null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+</script>
+
+
+
